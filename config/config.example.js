@@ -1,9 +1,9 @@
 'use strict';
 
-module.exports = appInfo => {
+module.exports = app_info => {
   const config = exports = {};
 
-  config.keys = appInfo.name + '_1531120004380_4501';
+  config.keys = app_info.name + '_1531120004380_4501';
 
   config.security = {
     csrf: {
@@ -29,6 +29,13 @@ module.exports = appInfo => {
         useNewUrlParser: true,
       },
     },
+  };
+
+  config.gitlab = {
+    url: 'https://git.xxx.com',
+    admin_token: 'testtoken',
+    account_prifix: 'gitlab_www_',
+    email_postfix: '@paraengine.com',
   };
 
   return config;
