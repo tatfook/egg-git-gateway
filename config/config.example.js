@@ -1,9 +1,9 @@
 'use strict';
 
-module.exports = app_info => {
+module.exports = app => {
   const config = exports = {};
 
-  config.keys = app_info.name + '_1531120004380_4501';
+  config.keys = app.name + '_1531120004380_4501';
 
   config.security = {
     csrf: {

@@ -3,6 +3,7 @@
 class ErrorHandler {
   static handle(err, ctx) {
     try {
+      console.log(err.name);
       ctx.body = { error: err.name };
       this[err.name](err, ctx);
     } catch (handlerNotFoundError) {
@@ -11,8 +12,18 @@ class ErrorHandler {
     }
   }
 
+  static UnprocessableEntityError(err, ctx) {
+    ctx.status = 400;
+    ctx.body.error = 'BadRequestError';
+    this.BadRequestError(err, ctx);
+  }
+
   static BadRequestError(err, ctx) {
-    ctx.body.detail = ctx.errors || err.message;
+    ctx.body.detail = err.errors || err.message;
+  }
+
+  static ConflictError(err, ctx) {
+    ctx.body.detail = 'Already exists';
   }
 
   static UnauthorizedError(err, ctx) {
