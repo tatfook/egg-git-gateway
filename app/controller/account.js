@@ -24,7 +24,7 @@ class AccountController extends Controller {
     await this.ctx.model.Account.create({
       _id: account.id,
       name: account.username,
-      keepwork_user_id: this.ctx.request.body.id,
+      user_id: this.ctx.request.body.id,
     }).catch(err => {
       console.error(err);
       throw err;
@@ -34,7 +34,7 @@ class AccountController extends Controller {
 
   async destroy() {
     const account = await this.ctx.model.Account.findOne({
-      keepwork_user_id: this.ctx.params.id,
+      user_id: this.ctx.params.id,
     }).catch(err => {
       console.error(err);
       throw err;

@@ -6,7 +6,6 @@ const Axios = require('axios');
 class GitlabService extends Service {
   constructor(ctx) {
     super(ctx);
-
     const GITLAB_CONFIG = this.config.gitlab;
     this.client = Axios.create({
       baseURL: `${GITLAB_CONFIG.url}/api/v4`,
@@ -79,6 +78,9 @@ class GitlabService extends Service {
 
   // file
   async load_file() { console.log('load file'); }
+
+  // tree
+  async load_tree() { console.log('load tree'); }
 }
 
 module.exports = GitlabService;

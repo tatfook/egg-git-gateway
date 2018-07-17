@@ -3,7 +3,7 @@
 module.exports = app => {
   const config = exports = {};
 
-  config.keys = app.name + '_1531120004380_4501';
+  config.keys = app.name;
 
   config.security = {
     csrf: {
@@ -16,15 +16,15 @@ module.exports = app => {
       port: 6379,
       host: 'localhost',
       password: '123456',
-      db: 0,
+      db: 1,
     },
   };
 
   config.mongoose = {
     client: {
-      url: 'mongodb://host/dbname',
+      url: 'mongodb://xx.xx.xx.xx:27017/keepwork',
       options: {
-        user: 'example',
+        user: 'gitGateway',
         pass: '123456',
         useNewUrlParser: true,
       },
@@ -32,10 +32,18 @@ module.exports = app => {
   };
 
   config.gitlab = {
-    url: 'https://git.xxx.com',
-    admin_token: 'testtoken',
+    url: 'http://localhost:xxxx',
+    admin_token: '123456',
     account_prifix: 'gitlab_www_',
     email_postfix: '@paraengine.com',
+  };
+
+  config.jwt = {
+    secret: '123456',
+  };
+
+  config.keepwork = {
+    baseURL: 'http://localhost:xxxx',
   };
 
   return config;

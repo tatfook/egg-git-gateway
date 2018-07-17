@@ -27,7 +27,7 @@ class ErrorHandler {
   }
 
   static UnauthorizedError(err, ctx) {
-    ctx.body.detail = 'Protected resource, use Authorization header to get access.';
+    ctx.body.detail = err.message;
   }
 
   static NotFoundError(err, ctx) {

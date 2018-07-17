@@ -1,7 +1,6 @@
 'use strict';
 
 const { app, assert } = require('egg-mock/bootstrap');
-const bin = [];
 
 describe('test/app/service/gitlab.test.js', () => {
   describe('about account', () => {
@@ -13,7 +12,6 @@ describe('test/app/service/gitlab.test.js', () => {
       };
       const GitlabService = ctx.service.gitlab;
       const account = await GitlabService.create_account(user);
-      bin.push(account);
       assert(account);
       assert(account.username === `${app.config.gitlab.account_prifix}${user.username}`);
       assert(account.id);

@@ -11,5 +11,10 @@ module.exports = () => {
   // error handler
   config.onerror = error_handler;
 
+  config.permission = {
+    r: 32,
+    rw: 64,
+  };
+
   return config;
 };

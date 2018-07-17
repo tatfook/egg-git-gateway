@@ -7,7 +7,7 @@ module.exports = app => {
   const AccountSchema = new Schema({
     _id: { type: Number },
     name: { type: String },
-    keepwork_user_id: { type: Number },
+    user_id: { type: Number },
   }, {
     timestamps: true,
   });
