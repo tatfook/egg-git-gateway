@@ -5,7 +5,7 @@ const { empty } = require('../helper');
 
 const generate_redis_key = user_id => {
   assert(user_id);
-  return `accounts-user_id::${user_id}`;
+  return `accounts-user_id:${user_id}`;
 };
 
 module.exports = app => {

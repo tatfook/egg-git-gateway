@@ -75,8 +75,7 @@ class GitlabService extends Service {
       id: res_data.id,
       visibility: res_data.visibility,
       name: res_data.name,
-      path: res_data.path,
-      path_with_namespace: res_data.path_with_namespace,
+      path: res_data.path_with_namespace,
       account_id: res_data.owner.id,
     };
   }

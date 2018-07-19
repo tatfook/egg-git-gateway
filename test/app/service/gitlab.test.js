@@ -40,7 +40,6 @@ describe('test/app/service/gitlab.test.js', () => {
       assert(result.id);
       assert(result.visibility === 'public');
       assert(result.name);
-      assert(result.path_with_namespace);
       assert(result.path);
       assert(result.account_id);
     });
@@ -57,7 +56,6 @@ describe('test/app/service/gitlab.test.js', () => {
       assert(result.id);
       assert(result.visibility);
       assert(result.name);
-      assert(result.path_with_namespace);
       assert(result.path);
       assert(result.account_id);
     });
