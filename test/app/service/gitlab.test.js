@@ -15,8 +15,8 @@ describe('test/app/service/gitlab.test.js', () => {
       const GitlabService = ctx.service.gitlab;
       const account = await GitlabService.create_account(user);
       assert(account.username === `${app.config.gitlab.account_prifix}${user.username}`);
-      assert(account.id);
-      await GitlabService.delete_account(account.id);
+      assert(account._id);
+      await GitlabService.delete_account(account._id);
     });
   });
 
@@ -28,7 +28,7 @@ describe('test/app/service/gitlab.test.js', () => {
 
     let result;
     const project_to_create = {
-      name: 'test10',
+      name: 'test0001',
       account_id: 11549,
       hook_url: 'http://localhost:8099/api/wiki/models/data_source/gitlabWebhook',
       visibility: 'public',
@@ -37,7 +37,7 @@ describe('test/app/service/gitlab.test.js', () => {
     it('should create a project', async () => {
       const ctx = app.mockContext();
       result = await ctx.service.gitlab.create_project(project_to_create);
-      assert(result.id);
+      assert(result._id);
       assert(result.visibility === 'public');
       assert(result.name);
       assert(result.path);
@@ -46,14 +46,14 @@ describe('test/app/service/gitlab.test.js', () => {
 
     it('should update the visibility of a project', async () => {
       const ctx = app.mockContext();
-      result = await ctx.service.gitlab.update_project_visibility(result.id, 'private');
+      result = await ctx.service.gitlab.update_project_visibility(result._id, 'private');
       assert(result.visibility === 'private');
     });
 
     it('should get a project from gitlab', async () => {
       const ctx = app.mockContext();
-      result = await ctx.service.gitlab.load_project(result.id);
-      assert(result.id);
+      result = await ctx.service.gitlab.load_project(result._id);
+      assert(result._id);
       assert(result.visibility);
       assert(result.name);
       assert(result.path);
@@ -62,7 +62,7 @@ describe('test/app/service/gitlab.test.js', () => {
 
     it('should delete a project', async () => {
       const ctx = app.mockContext();
-      await ctx.service.gitlab.delete_project(result.id);
+      await ctx.service.gitlab.delete_project(result._id);
     });
   });
 });

@@ -7,31 +7,29 @@ const create_rule = {
   site_id: 'int',
   name: 'string',
   hook_url: 'url',
-  visibility: {
-    type: 'string',
-    values: [ 'public', 'private' ],
-    required: false,
-  },
+  visibility: [ 'public', 'private' ],
 };
 
 class ProjectController extends Controller {
   async create() {
     this.ctx.validate(create_rule);
-    const account = await this.ctx.model.account
+    const account = await this.ctx.model.Account
       .get_by_user_id(this.ctx.params.user_id)
       .catch(err => {
         this.ctx.logger.error(err);
-        this.ctx.throw(404, 'User not found');
       });
+    if (empty(account)) { this.ctx.throw(404, 'User not found'); }
+
+    console.log(account);
     const project = await this.ctx.service.gitlab
-      .create_proeject({
+      .create_project({
         name: this.ctx.request.body.name,
         visibility: this.ctx.request.body.visibility,
         hook_url: this.ctx.request.body.hook_url,
-        account_id: account.id,
+        account_id: account._id,
       }).catch(err => {
         this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status);
+        this.ctx.throw(409, 'project exists');
       });
     await this.ctx.model.Project
       .create(project)
@@ -41,6 +39,11 @@ class ProjectController extends Controller {
       });
     this.ctx.status = 201;
   }
+
+  // todo
+  // async update_visibility() {
+
+  // }
 
   async load_from_git() {
     const project_id = this.ctx.params.id;

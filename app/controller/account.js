@@ -23,7 +23,7 @@ class AccountController extends Controller {
         this.ctx.throw(err.response.status);
       });
     await this.ctx.model.Account.create({
-      _id: account.id,
+      _id: account._id,
       name: account.username,
       user_id: this.ctx.request.body.user_id,
     }).catch(err => {

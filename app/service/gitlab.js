@@ -31,7 +31,7 @@ class GitlabService extends Service {
   serialize_loaded_account(res_data) {
     return {
       username: res_data.username,
-      id: res_data.id,
+      _id: res_data.id,
     };
   }
 
@@ -72,7 +72,7 @@ class GitlabService extends Service {
 
   serialize_loaded_project(res_data) {
     return {
-      id: res_data.id,
+      _id: res_data.id,
       visibility: res_data.visibility,
       name: res_data.name,
       path: res_data.path_with_namespace,
@@ -90,7 +90,7 @@ class GitlabService extends Service {
 
   async set_project_hooks(project_id, hook_setting) {
     assert(hook_setting.url);
-    hook_setting.id = project_id;
+    hook_setting._id = project_id;
     await this.client
       .post(`/projects/${project_id}/hooks`, hook_setting)
       .catch(err => {
@@ -115,7 +115,7 @@ class GitlabService extends Service {
       });
     serialized_project = this.serialize_loaded_project(res.data);
     const hook_setting = this.serialize_hook_setting(project);
-    await this.set_project_hooks(serialized_project.id, hook_setting);
+    await this.set_project_hooks(serialized_project._id, hook_setting);
     return serialized_project;
   }
 
