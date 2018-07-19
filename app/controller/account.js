@@ -3,7 +3,7 @@
 const Controller = require('egg').Controller;
 
 const create_rule = {
-  id: 'int',
+  user_id: 'int',
   username: 'string',
   password: {
     type: 'password',
@@ -19,15 +19,15 @@ class AccountController extends Controller {
         username: this.ctx.request.body.username,
         password: this.ctx.request.body.password,
       }).catch(err => {
-        console.error(err);
+        this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);
       });
     await this.ctx.model.Account.create({
       _id: account.id,
       name: account.username,
-      user_id: this.ctx.request.body.id,
+      user_id: this.ctx.request.body.user_id,
     }).catch(err => {
-      console.error(err);
+      this.ctx.logger.error(err);
       throw err;
     });
     this.ctx.status = 201;
@@ -36,9 +36,9 @@ class AccountController extends Controller {
   async destroy() {
     const account = await this.ctx.model.Account
       .findOne({
-        user_id: this.ctx.params.id,
+        user_id: this.ctx.params.user_id,
       }).catch(err => {
-        console.error(err);
+        this.ctx.logger.error(err);
         throw err;
       });
     if (!account) {
@@ -47,12 +47,13 @@ class AccountController extends Controller {
     await this.service.gitlab
       .delete_account(account.id)
       .catch(err => {
-        console.error(err);
+        this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);
       });
-    await account.remove()
+    await this.ctx.model.Account
+      .delete_and_release_cache_by_user_id(account.user_id)
       .catch(err => {
-        console.error(err);
+        this.ctx.logger.error(err);
         throw err;
       });
     this.ctx.status = 204;

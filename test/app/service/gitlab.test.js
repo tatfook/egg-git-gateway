@@ -42,8 +42,7 @@ describe('test/app/service/gitlab.test.js', () => {
       assert(result.name);
       assert(result.path_with_namespace);
       assert(result.path);
-      assert(result.owner);
-      assert(result.namespace);
+      assert(result.account_id);
     });
 
     it('should update the visibility of a project', async () => {
@@ -60,8 +59,7 @@ describe('test/app/service/gitlab.test.js', () => {
       assert(result.name);
       assert(result.path_with_namespace);
       assert(result.path);
-      assert(result.owner);
-      assert(result.namespace);
+      assert(result.account_id);
     });
 
     it('should delete a project', async () => {
