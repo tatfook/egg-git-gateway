@@ -10,6 +10,10 @@ const create_rule = {
   visibility: [ 'public', 'private' ],
 };
 
+const update_visibility_rule = {
+  visibility: [ 'public', 'private' ],
+};
+
 class ProjectController extends Controller {
   async create() {
     this.ctx.validate(create_rule);
@@ -20,8 +24,7 @@ class ProjectController extends Controller {
       });
     if (empty(account)) { this.ctx.throw(404, 'User not found'); }
 
-    console.log(account);
-    const project = await this.ctx.service.gitlab
+    const project = await this.service.gitlab
       .create_project({
         name: this.ctx.request.body.name,
         visibility: this.ctx.request.body.visibility,
@@ -31,6 +34,8 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(409, 'project exists');
       });
+
+    project.site_id = this.ctx.request.body.site_id;
     await this.ctx.model.Project
       .create(project)
       .catch(err => {
@@ -40,10 +45,34 @@ class ProjectController extends Controller {
     this.ctx.status = 201;
   }
 
-  // todo
-  // async update_visibility() {
+  async update_visibility() {
+    this.ctx.validate(update_visibility_rule);
+    const project = await this.ctx.model.Project
+      .get_by_path(
+        this.ctx.params.path,
+        false,
+        false
+      );
+    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-  // }
+    project.visibility = this.ctx.request.body.visibility;
+    await this.service.gitlab
+      .update_project_visibility(project._id, project.visibility)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(400);
+      });
+
+    await project.save().catch(err => {
+      this.ctx.logger.error(err);
+      this.ctx.throw(500);
+    });
+
+    this.ctx.body = {
+      site_id: project.site_id,
+      visibility: project.visibility,
+    };
+  }
 
   async load_from_git() {
     const project_id = this.ctx.params.id;

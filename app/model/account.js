@@ -49,22 +49,26 @@ module.exports = app => {
     return JSON.parse(account);
   };
 
-  AccountSchema.statics.get_by_user_id = async function(user_id) {
+  AccountSchema.statics.get_by_user_id = async function(user_id, from_cache = true) {
+    let account;
+
     // load from cache
-    let account = await AccountSchema.statics.load_cache_by_user_id(user_id);
-    if (!empty(account)) { return account; }
+    if (from_cache) {
+      account = await this.load_cache_by_user_id(user_id);
+      if (!empty(account)) { return account; }
+    }
 
     // load from db
     account = await this.findOne({ user_id })
       .catch(err => { console.log(err); });
     if (!empty(account)) {
-      await AccountSchema.statics.cache(account);
+      await this.cache(account);
       return account;
     }
   };
 
   AccountSchema.statics.delete_and_release_cache_by_user_id = async function(user_id) {
-    await AccountSchema.statics.release_cache_by_user_id(user_id);
+    await this.release_cache_by_user_id(user_id);
     await this.deleteMany({ user_id })
       .catch(err => {
         throw err;

@@ -47,7 +47,9 @@ describe('test/app/model/project.test.js', () => {
   it('should cache after updated', async () => {
     const ctx = app.mockContext();
     const ProjectModel = ctx.model.Project;
-    await ProjectModel.update_visibility_by_path(project.path, 'public');
+    const loaded_project = await ProjectModel.get_by_path_from_db(project.path);
+    loaded_project.visibility = 'public';
+    await loaded_project.save();
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
     assert(cached_data.visibility === 'public');
   });
