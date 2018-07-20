@@ -6,7 +6,7 @@ const { empty } = require('../helper');
 const create_rule = {
   site_id: 'int',
   name: 'string',
-  hook_url: 'url',
+  hook_url: 'string',
   visibility: [ 'public', 'private' ],
 };
 
@@ -48,9 +48,8 @@ class ProjectController extends Controller {
   async update_visibility() {
     this.ctx.validate(update_visibility_rule);
     const project = await this.ctx.model.Project
-      .get_by_path(
+      .get_by_path_from_db(
         this.ctx.params.path,
-        false,
         false
       );
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
@@ -60,7 +59,7 @@ class ProjectController extends Controller {
       .update_project_visibility(project._id, project.visibility)
       .catch(err => {
         this.ctx.logger.error(err);
-        this.ctx.throw(400);
+        this.ctx.throw(500);
       });
 
     await project.save().catch(err => {
@@ -72,6 +71,30 @@ class ProjectController extends Controller {
       site_id: project.site_id,
       visibility: project.visibility,
     };
+  }
+
+  async destroy() {
+    const project = await this.ctx.model.Project
+      .get_by_path(
+        this.ctx.params.path,
+        false
+      );
+    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
+
+    await this.service.gitlab
+      .delete_project(project._id)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await this.ctx.model.Project
+      .delete_and_release_cache_by_path(project.path)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    this.ctx.status = 204;
   }
 
   async load_from_git() {
