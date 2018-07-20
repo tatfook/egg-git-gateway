@@ -21,6 +21,7 @@ class ProjectController extends Controller {
       .get_by_user_id(this.ctx.params.user_id)
       .catch(err => {
         this.ctx.logger.error(err);
+        this.ctx.throw(500);
       });
     if (empty(account)) { this.ctx.throw(404, 'User not found'); }
 
@@ -97,12 +98,20 @@ class ProjectController extends Controller {
     this.ctx.status = 204;
   }
 
+  async dump() {
+    await this.load_from_gitlab();
+  }
+
   async load_from_git() {
     const project_id = this.ctx.params.id;
     const project = await this.ctx.service.gitlab
       .load_project(project_id)
       .catch(err => {
-        this.ctx.logger.error(err.response.status);
+        this.ctx.logger.error(err);
+        if (err.response.status === 404) {
+          this.ctx.throw(404, 'Project not found');
+        }
+        this.ctx.throw(500);
       });
 
     if (empty(project)) {
@@ -113,6 +122,7 @@ class ProjectController extends Controller {
     await this.ctx.model.Project.create(project)
       .catch(err => {
         this.ctx.logger.error(err);
+        this.ctx.throw(500);
       });
     this.ctx.status = 204;
   }

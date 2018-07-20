@@ -156,7 +156,30 @@ class GitlabService extends Service {
   }
 
   // file
-  async load_file() { console.log('load file'); }
+  serialized_loaded_file(res_data) {
+    return {
+      name: res_data.file_name,
+      content: Buffer.from(res_data.content).toString(res_data.encoding),
+      size: res_data.size,
+      blob_id: res_data.blob_id,
+      commit_id: res_data.commit_id,
+      last_commit_id: res_data.last_commit_id,
+    };
+  }
+
+  async load_file(project_id, file_path, encoded = false) {
+    assert(project_id);
+    assert(file_path);
+    if (!encoded) { file_path = encodeURIComponent(file_path); }
+    const res = await this.client
+      .get(`/projects/${project_id}/repository/files/${file_path}?ref=master`)
+      .catch(err => {
+        console.log(`failed to get file ${file_path} of project ${project_id}`);
+        console.error(err);
+        throw err;
+      });
+    return this.serialized_loaded_file(res.data);
+  }
 
   // tree
   async load_tree() { console.log('load tree'); }
