@@ -14,14 +14,14 @@ module.exports = app => {
   const Schema = mongoose.Schema;
 
   const FileSchema = new Schema({
-    name: { type: String },
-    path: { type: String },
-    content: { type: String },
-    size: { type: Number },
-    project_id: { type: Number },
-    blob_id: { type: Number },
-    commit_id: { type: String },
-    last_commit_id: { type: String },
+    name: String,
+    path: String,
+    content: String,
+    size: Number,
+    project_id: Number,
+    blob_id: Number,
+    commit_id: String,
+    last_commit_id: String,
   }, {
     timestamps: true,
   });

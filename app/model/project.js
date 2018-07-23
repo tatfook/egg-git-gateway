@@ -14,12 +14,12 @@ module.exports = app => {
   const Schema = mongoose.Schema;
 
   const ProjectSchema = new Schema({
-    _id: { type: Number },
-    site_id: { type: Number },
-    visibility: { type: String },
-    name: { type: String },
-    path: { type: String },
-    account_id: { type: Number },
+    _id: Number,
+    visibility: { type: String, default: 'public' },
+    name: String,
+    sitename: String,
+    path: { type: String, index: true },
+    git_path: String,
   }, {
     timestamps: true,
   });

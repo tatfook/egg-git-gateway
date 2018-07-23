@@ -6,9 +6,8 @@ describe('test/app/controller/account.test.js', () => {
 
   it('should post /accounts to create an account', () => {
     const user = {
-      username: 'git-gateway2',
+      username: 'gitgateway123',
       password: '12345678',
-      user_id: 12345,
     };
     return app.httpRequest()
       .post('/accounts')
@@ -18,7 +17,7 @@ describe('test/app/controller/account.test.js', () => {
 
   it('should delete /accounts/:id to delete an account', () => {
     return app.httpRequest()
-      .del('/accounts/12345')
+      .del('/accounts/gitgateway123')
       .expect(204);
   });
 });

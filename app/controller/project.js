@@ -4,9 +4,8 @@ const Controller = require('egg').Controller;
 const { empty } = require('../helper');
 
 const create_rule = {
-  site_id: 'int',
-  name: 'string',
-  hook_url: 'string',
+  sitename: 'string',
+  hook_url: 'url',
   visibility: [ 'public', 'private' ],
 };
 
@@ -18,7 +17,7 @@ class ProjectController extends Controller {
   async create() {
     this.ctx.validate(create_rule);
     const account = await this.ctx.model.Account
-      .get_by_user_id(this.ctx.params.user_id)
+      .get_by_kw_username(this.ctx.params.kw_username)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -27,7 +26,7 @@ class ProjectController extends Controller {
 
     const project = await this.service.gitlab
       .create_project({
-        name: this.ctx.request.body.name,
+        name: this.ctx.request.body.sitename,
         visibility: this.ctx.request.body.visibility,
         hook_url: this.ctx.request.body.hook_url,
         account_id: account._id,
@@ -36,7 +35,9 @@ class ProjectController extends Controller {
         this.ctx.throw(409, 'project exists');
       });
 
-    project.site_id = this.ctx.request.body.site_id;
+    project.sitename = this.ctx.request.body.sitename;
+    project.path = `${this.ctx.params.kw_username}/${project.sitename}`;
+
     await this.ctx.model.Project
       .create(project)
       .catch(err => {
@@ -91,35 +92,6 @@ class ProjectController extends Controller {
 
     await this.ctx.model.Project
       .delete_and_release_cache_by_path(project.path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.ctx.status = 204;
-  }
-
-  async dump() {
-    await this.load_from_gitlab();
-  }
-
-  async load_from_git() {
-    const project_id = this.ctx.params.id;
-    const project = await this.ctx.service.gitlab
-      .load_project(project_id)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        if (err.response.status === 404) {
-          this.ctx.throw(404, 'Project not found');
-        }
-        this.ctx.throw(500);
-      });
-
-    if (empty(project)) {
-      this.ctx.throw(404, 'Project not found');
-    }
-
-    project.site_id = this.ctx.request.body.site_id;
-    await this.ctx.model.Project.create(project)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);

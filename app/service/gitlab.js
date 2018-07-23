@@ -17,12 +17,10 @@ class GitlabService extends Service {
 
   // account
   serialize_new_account(user) {
-    const GITLAB_CONFIG = this.config.gitlab;
-    const account_name = `${GITLAB_CONFIG.account_prifix}${user.username}`;
     return {
-      username: account_name,
-      name: account_name,
-      email: `${user.username}${GITLAB_CONFIG.email_postfix}`,
+      username: user.username,
+      name: user.name,
+      email: user.email,
       password: user.password,
       skip_confirmation: true,
     };
@@ -31,6 +29,7 @@ class GitlabService extends Service {
   serialize_loaded_account(res_data) {
     return {
       username: res_data.username,
+      name: res_data.name,
       _id: res_data.id,
     };
   }
@@ -75,7 +74,7 @@ class GitlabService extends Service {
       _id: res_data.id,
       visibility: res_data.visibility,
       name: res_data.name,
-      path: res_data.path_with_namespace,
+      git_path: res_data.path_with_namespace,
       account_id: res_data.owner.id,
     };
   }
@@ -117,18 +116,6 @@ class GitlabService extends Service {
     const hook_setting = this.serialize_hook_setting(project);
     await this.set_project_hooks(serialized_project._id, hook_setting);
     return serialized_project;
-  }
-
-  async load_project(project_id) {
-    assert(project_id);
-    const res = await this.client
-      .get(`projects/${project_id}`)
-      .catch(err => {
-        console.log(`failed to load project ${project_id} from gitlab`);
-        console.error(err);
-        throw err;
-      });
-    return this.serialize_loaded_project(res.data);
   }
 
   async update_project_visibility(project_id, visibility) {

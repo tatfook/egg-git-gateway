@@ -3,9 +3,9 @@
 const assert = require('assert');
 const { empty } = require('../helper');
 
-const generate_redis_key = user_id => {
-  assert(user_id);
-  return `accounts-user_id:${user_id}`;
+const generate_redis_key = kw_username => {
+  assert(kw_username);
+  return `accounts-kw_username:${kw_username}`;
 };
 
 module.exports = app => {
@@ -14,15 +14,15 @@ module.exports = app => {
   const Schema = mongoose.Schema;
 
   const AccountSchema = new Schema({
-    _id: { type: Number },
-    name: { type: String },
-    user_id: { type: Number },
+    _id: Number,
+    name: String,
+    kw_username: { type: String, index: true },
   }, {
     timestamps: true,
   });
 
   AccountSchema.statics.cache = async function(account) {
-    const key = generate_redis_key(account.user_id);
+    const key = generate_redis_key(account.kw_username);
     const serilize_account = JSON.stringify(account);
     await redis.set(key, serilize_account)
       .catch(err => {
@@ -31,8 +31,8 @@ module.exports = app => {
       });
   };
 
-  AccountSchema.statics.release_cache_by_user_id = async function(user_id) {
-    const key = generate_redis_key(user_id);
+  AccountSchema.statics.release_cache_by_kw_username = async function(kw_username) {
+    const key = generate_redis_key(kw_username);
     await redis.del(key)
       .catch(err => {
         console.log(`fail to release cache of account ${key}`);
@@ -40,8 +40,8 @@ module.exports = app => {
       });
   };
 
-  AccountSchema.statics.load_cache_by_user_id = async function(user_id) {
-    const key = generate_redis_key(user_id);
+  AccountSchema.statics.load_cache_by_kw_username = async function(kw_username) {
+    const key = generate_redis_key(kw_username);
     const account = await redis.get(key)
       .catch(err => {
         console.error(err);
@@ -49,17 +49,17 @@ module.exports = app => {
     return JSON.parse(account);
   };
 
-  AccountSchema.statics.get_by_user_id = async function(user_id, from_cache = true) {
+  AccountSchema.statics.get_by_kw_username = async function(kw_username, from_cache = true) {
     let account;
 
     // load from cache
     if (from_cache) {
-      account = await this.load_cache_by_user_id(user_id);
+      account = await this.load_cache_by_kw_username(kw_username);
       if (!empty(account)) { return account; }
     }
 
     // load from db
-    account = await this.findOne({ user_id })
+    account = await this.findOne({ kw_username })
       .catch(err => { console.log(err); });
     if (!empty(account)) {
       await this.cache(account);
@@ -67,9 +67,9 @@ module.exports = app => {
     }
   };
 
-  AccountSchema.statics.delete_and_release_cache_by_user_id = async function(user_id) {
-    await this.release_cache_by_user_id(user_id);
-    await this.deleteMany({ user_id })
+  AccountSchema.statics.delete_and_release_cache_by_kw_username = async function(kw_username) {
+    await this.release_cache_by_kw_username(kw_username);
+    await this.deleteOne({ kw_username })
       .catch(err => {
         throw err;
       });

@@ -36,9 +36,9 @@ class FileController extends Controller {
       });
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-    const path_without_namespace = path.replace(`${project_path}`, '');
+    const git_path_without_namespace = project.git_path.replace(`${project_path}`, '');
     const file = await this.service.gitlab
-      .load_file(project._id, path_without_namespace)
+      .load_file(project._id, git_path_without_namespace)
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {

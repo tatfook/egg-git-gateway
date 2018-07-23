@@ -3,7 +3,6 @@
 const Controller = require('egg').Controller;
 
 const create_rule = {
-  user_id: 'int',
   username: 'string',
   password: {
     type: 'password',
@@ -14,18 +13,22 @@ const create_rule = {
 class AccountController extends Controller {
   async create() {
     this.ctx.validate(create_rule);
+    const account_prifix = this.config.gitlab.account_prifix;
+    const email_postfix = this.config.gitlab.email_postfix;
     const account = await this.service.gitlab
       .create_account({
-        username: this.ctx.request.body.username,
+        username: `${account_prifix}${this.ctx.request.body.username}`,
+        name: this.ctx.request.body.username,
         password: this.ctx.request.body.password,
+        email: `${this.ctx.request.body.username}${email_postfix}`,
       }).catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);
       });
     await this.ctx.model.Account.create({
       _id: account._id,
-      name: account.username,
-      user_id: this.ctx.request.body.user_id,
+      username: account.username,
+      kw_username: account.name,
     }).catch(err => {
       this.ctx.logger.error(err);
       throw err;
@@ -36,7 +39,7 @@ class AccountController extends Controller {
   async destroy() {
     const account = await this.ctx.model.Account
       .findOne({
-        user_id: this.ctx.params.user_id,
+        kw_username: this.ctx.params.kw_username,
       }).catch(err => {
         this.ctx.logger.error(err);
         throw err;
@@ -45,13 +48,13 @@ class AccountController extends Controller {
       this.ctx.throw(404, 'User Not Found');
     }
     await this.service.gitlab
-      .delete_account(account.id)
+      .delete_account(account._id)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);
       });
     await this.ctx.model.Account
-      .delete_and_release_cache_by_user_id(account.user_id)
+      .delete_and_release_cache_by_kw_username(account.kw_username)
       .catch(err => {
         this.ctx.logger.error(err);
         throw err;

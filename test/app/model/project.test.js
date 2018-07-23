@@ -9,12 +9,12 @@ describe('test/app/model/project.test.js', () => {
   });
 
   const project = {
-    _id: 123,
-    site_id: 456,
+    _id: 12345,
+    sitename: 'test1',
     visibility: 'private',
-    name: 'test',
-    path: 'gitlab_www_test/test',
-    account_id: 123,
+    name: 'keepworktest1',
+    path: 'testuser/test1',
+    git_path: 'gitlab_www_testuser/keepworktest1',
   };
 
   it('should cache after created', async () => {
@@ -24,24 +24,11 @@ describe('test/app/model/project.test.js', () => {
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
 
     assert(cached_data._id === project._id);
-    assert(cached_data.site_id === project.site_id);
     assert(cached_data.visibility === project.visibility);
     assert(cached_data.name === project.name);
+    assert(cached_data.sitename === project.sitename);
     assert(cached_data.path === project.path);
-    assert(cached_data.account_id === project.account_id);
-  });
-
-  it('should get a project', async () => {
-    const ctx = app.mockContext();
-    const ProjectModel = ctx.model.Project;
-    const loaded_project = await ProjectModel.get_by_path(project.path);
-
-    assert(loaded_project._id === project._id);
-    assert(loaded_project.site_id === project.site_id);
-    assert(loaded_project.visibility === project.visibility);
-    assert(loaded_project.name === project.name);
-    assert(loaded_project.path === project.path);
-    assert(loaded_project.account_id === project.account_id);
+    assert(cached_data.git_path === project.git_path);
   });
 
   it('should cache after updated', async () => {

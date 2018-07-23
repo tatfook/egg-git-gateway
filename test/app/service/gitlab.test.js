@@ -6,16 +6,19 @@ afterEach(mock.restore);
 
 describe('test/app/service/gitlab.test.js', () => {
   describe('about account', () => {
-    it('should create an gitlab account for the given user, and then delete the account', async () => {
+    it('should create a gitlab account for the given user, and then delete the account', async () => {
       const ctx = app.mockContext();
       const user = {
-        username: 'testgitgateway',
+        username: 'gitlab_www_testbackend1',
+        name: 'testbackend1',
         password: '12345678',
+        email: 'testbackend1@paracraft.cn',
       };
       const GitlabService = ctx.service.gitlab;
       const account = await GitlabService.create_account(user);
-      assert(account.username === `${app.config.gitlab.account_prifix}${user.username}`);
+      assert(account.username === user.username);
       assert(account._id);
+      assert(account.name === user.name);
       await GitlabService.delete_account(account._id);
     });
   });
@@ -40,24 +43,13 @@ describe('test/app/service/gitlab.test.js', () => {
       assert(result._id);
       assert(result.visibility === 'public');
       assert(result.name);
-      assert(result.path);
-      assert(result.account_id);
+      assert(result.git_path);
     });
 
     it('should update the visibility of a project', async () => {
       const ctx = app.mockContext();
       result = await ctx.service.gitlab.update_project_visibility(result._id, 'private');
       assert(result.visibility === 'private');
-    });
-
-    it('should get a project from gitlab', async () => {
-      const ctx = app.mockContext();
-      result = await ctx.service.gitlab.load_project(result._id);
-      assert(result._id);
-      assert(result.visibility);
-      assert(result.name);
-      assert(result.path);
-      assert(result.account_id);
     });
 
     it('should delete a project', async () => {
