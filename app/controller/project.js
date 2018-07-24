@@ -50,10 +50,7 @@ class ProjectController extends Controller {
   async update_visibility() {
     this.ctx.validate(update_visibility_rule);
     const project = await this.ctx.model.Project
-      .get_by_path_from_db(
-        this.ctx.params.path,
-        false
-      );
+      .get_by_path_from_db(this.ctx.params.path);
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
     project.visibility = this.ctx.request.body.visibility;

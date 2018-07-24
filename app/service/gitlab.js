@@ -144,9 +144,10 @@ class GitlabService extends Service {
 
   // file
   serialized_loaded_file(res_data) {
+    console.log(res_data);
     return {
       name: res_data.file_name,
-      content: Buffer.from(res_data.content).toString(res_data.encoding),
+      content: new Buffer.from(res_data.content, res_data.encoding).toString(),
       size: res_data.size,
       blob_id: res_data.blob_id,
       commit_id: res_data.commit_id,
@@ -154,10 +155,10 @@ class GitlabService extends Service {
     };
   }
 
-  async load_file(project_id, file_path, encoded = false) {
+  async load_file(project_id, file_path) {
     assert(project_id);
     assert(file_path);
-    if (!encoded) { file_path = encodeURIComponent(file_path); }
+    file_path = encodeURIComponent(file_path);
     const res = await this.client
       .get(`/projects/${project_id}/repository/files/${file_path}?ref=master`)
       .catch(err => {
@@ -167,9 +168,6 @@ class GitlabService extends Service {
       });
     return this.serialized_loaded_file(res.data);
   }
-
-  // tree
-  async load_tree() { console.log('load tree'); }
 }
 
 module.exports = GitlabService;

@@ -6,8 +6,9 @@ const { empty } = require('../helper');
 class FileController extends Controller {
   async show() {
     const path = decodeURI(this.ctx.params.path);
+    const from_cache = !this.ctx.query.refresh_cache;
     let file = await this.ctx.model.File
-      .get_by_path(path)
+      .get_by_path(path, from_cache)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -16,6 +17,8 @@ class FileController extends Controller {
     if (empty(file)) {
       file = await this.load_from_gitlab(path);
     }
+
+    this.throw_404_if_not_exist(file);
     this.ctx.body = { content: file.content };
   }
 
@@ -24,29 +27,37 @@ class FileController extends Controller {
     this.ctx.body = { content: file.content };
   }
 
-  async load_from_gitlab(path, decoded = true) {
-    if (!decoded) { path = decodeURI(this.ctx.params.path); }
+  get_project_path(path) {
     const project_path_pattern = /^[^\/]+\/[^\/]+/;
     const project_path = path.match(project_path_pattern)[0];
+    return project_path;
+  }
+
+  get_file_git_path_without_namespace(path) {
+    const to_replace = /^[^\/]+\/[^\/]+\//;
+    const file_git_path_without_namespace = path.replace(`${to_replace}`, '');
+    return file_git_path_without_namespace;
+  }
+
+  async load_from_gitlab(path) {
     const project = await this.ctx.model.Project
-      .get_by_path(project_path)
+      .get_by_path(this.get_project_path(path))
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-    const git_path_without_namespace = project.git_path.replace(`${project_path}`, '');
     const file = await this.service.gitlab
-      .load_file(project._id, git_path_without_namespace)
+      .load_file(project._id, this.get_file_git_path_without_namespace(path))
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {
-          this.ctx.throw(404, 'File not found');
+          this.throw_404_if_not_exist();
         }
         this.ctx.throw(500);
       });
-    if (empty(file)) { this.ctx.throw(404, 'File not found'); }
+    this.throw_404_if_not_exist(file);
 
     file.path = path;
     await this.ctx.model.File.create(file)
@@ -55,6 +66,12 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
     return file;
+  }
+
+  throw_404_if_not_exist(file) {
+    const errMsg = 'File not found';
+    if (empty(file)) { this.ctx.throw(404, errMsg); }
+    if (file.status === 'deleted') { this.ctx.throw(404, errMsg); }
   }
 }
 

@@ -34,8 +34,7 @@ module.exports = app => {
       });
   };
 
-  ProjectSchema.statics.release_cache_by_path = async function(path, decoded = true) {
-    if (!decoded) { path = decodeURI(path); }
+  ProjectSchema.statics.release_cache_by_path = async function(path) {
     const key = generate_redis_key(path);
     await redis.del(key)
       .catch(err => {
@@ -44,8 +43,7 @@ module.exports = app => {
       });
   };
 
-  ProjectSchema.statics.load_cache_by_path = async function(path, decoded = true) {
-    if (!decoded) { path = decodeURI(path); }
+  ProjectSchema.statics.load_cache_by_path = async function(path) {
     const key = generate_redis_key(path);
     const project = await redis.get(key)
       .catch(err => {
@@ -54,8 +52,7 @@ module.exports = app => {
     return JSON.parse(project);
   };
 
-  ProjectSchema.statics.get_by_path = async function(path, decoded = true, from_cache = true) {
-    if (!decoded) { path = decodeURI(path); }
+  ProjectSchema.statics.get_by_path = async function(path, from_cache = true) {
     let project;
 
     // load from cache
@@ -73,8 +70,8 @@ module.exports = app => {
     }
   };
 
-  ProjectSchema.statics.get_by_path_from_db = async function(path, decoded = true) {
-    return this.get_by_path(path, decoded, false);
+  ProjectSchema.statics.get_by_path_from_db = async function(path) {
+    return this.get_by_path(path, false);
   };
 
   ProjectSchema.statics.delete_and_release_cache_by_path = async function(path) {

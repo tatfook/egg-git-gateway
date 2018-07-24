@@ -3,10 +3,15 @@
 const assert = require('assert');
 const { empty } = require('../helper');
 
-const generate_redis_key = path => {
+const generate_file_key = path => {
   assert(path);
   return `file:${path}`;
 };
+
+// const generate_tree_key = path => {
+//   assert(path);
+//   return `tree:${path}`;
+// };
 
 module.exports = app => {
   const redis = app.redis;
@@ -15,19 +20,22 @@ module.exports = app => {
 
   const FileSchema = new Schema({
     name: String,
-    path: String,
+    path: { type: String, index: true },
     content: String,
     size: Number,
     project_id: Number,
-    blob_id: Number,
+    blob_id: String,
     commit_id: String,
     last_commit_id: String,
+    type: { type: String, default: 'blob' },
+    status: { type: String, default: 'normal' },
   }, {
     timestamps: true,
   });
 
   FileSchema.statics.cache = async function(file) {
-    const key = generate_redis_key(file.path);
+    if (file.status === 'deleted') { return; }
+    const key = generate_file_key(file.path);
     const serilized_file = JSON.stringify(file);
     await redis.set(key, serilized_file)
       .catch(err => {
@@ -36,9 +44,8 @@ module.exports = app => {
       });
   };
 
-  FileSchema.statics.release_cache_by_path = async function(path, decoded = true) {
-    if (!decoded) { path = decodeURI(path); }
-    const key = generate_redis_key(path);
+  FileSchema.statics.release_cache_by_path = async function(path) {
+    const key = generate_file_key(path);
     await redis.del(key)
       .catch(err => {
         console.log(`fail to release cache of file ${key}`);
@@ -46,9 +53,8 @@ module.exports = app => {
       });
   };
 
-  FileSchema.statics.load_cache_by_path = async function(path, decoded = true) {
-    if (!decoded) { path = decodeURI(path); }
-    const key = generate_redis_key(path);
+  FileSchema.statics.load_cache_by_path = async function(path) {
+    const key = generate_file_key(path);
     const project = await redis.get(key)
       .catch(err => {
         console.log(err);
@@ -56,8 +62,7 @@ module.exports = app => {
     return JSON.parse(project);
   };
 
-  FileSchema.statics.get_by_path = async function(path, decoded = true, from_cache = true) {
-    if (!decoded) { path = decodeURI(path); }
+  FileSchema.statics.get_by_path = async function(path, from_cache = true) {
     let project;
 
     // load from cache
@@ -75,8 +80,8 @@ module.exports = app => {
     }
   };
 
-  FileSchema.statics.get_by_path_from_db = async function(path, decoded = true) {
-    return this.get_by_path(path, decoded, false);
+  FileSchema.statics.get_by_path_from_db = async function(path) {
+    return this.get_by_path(path, false);
   };
 
   FileSchema.statics.delete_and_release_cache_by_path = async function(path) {
@@ -85,6 +90,20 @@ module.exports = app => {
       .catch(err => {
         throw err;
       });
+  };
+
+  FileSchema.statics.get_tree_by_path = async function(path, recursive = false) {
+    let path_pattern;
+    if (recursive) {
+      path_pattern = `^${path}\/`;
+    } else {
+      path_pattern = `^${path}\/[^\/]+$`;
+    }
+    const tree = await this.find(
+      { path: new RegExp(path_pattern, 'u') },
+      'name path type -_id'
+    ).catch(err => { console.log(err); });
+    return tree;
   };
 
   FileSchema.post('save', async function(file) {

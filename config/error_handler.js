@@ -4,7 +4,6 @@ class ErrorHandler {
   static handle(err, ctx) {
     try {
       console.log(err.name);
-      ctx.body = { error: err.name };
       this[err.name](err, ctx);
     } catch (handlerNotFoundError) {
       console.log(handlerNotFoundError);
@@ -14,31 +13,29 @@ class ErrorHandler {
 
   static UnprocessableEntityError(err, ctx) {
     ctx.status = 400;
-    ctx.body.error = 'BadRequestError';
     this.BadRequestError(err, ctx);
   }
 
   static BadRequestError(err, ctx) {
-    ctx.body.detail = err.errors || err.message;
+    ctx.body = { error: err.errors || err.message };
   }
 
   static ConflictError(err, ctx) {
-    ctx.body.detail = 'Already exists';
+    ctx.body = { error: 'Already exists' };
   }
 
   static UnauthorizedError(err, ctx) {
-    ctx.body.detail = err.message;
+    ctx.body = { error: err.message };
   }
 
   static NotFoundError(err, ctx) {
-    ctx.body.detail = err.message;
+    ctx.body = { error: err.message };
   }
 
   static InternalServerError(err, ctx) {
     ctx.status = 500;
     ctx.body = {
-      error: 'Internal Server Error',
-      detail: 'An unknown error happened',
+      error: 'An unknown error happened',
     };
   }
 }

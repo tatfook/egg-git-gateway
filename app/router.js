@@ -15,5 +15,7 @@ module.exports = app => {
   router.put('/projects/:path/visibility', controller.project.update_visibility);
   router.delete('/projects/:path', controller.project.destroy);
 
+  router.get('/tree/:path', controller.tree.show);
+
   router.get('/files/:path', controller.file.show);
 };
