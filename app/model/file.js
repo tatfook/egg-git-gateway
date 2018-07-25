@@ -46,7 +46,9 @@ module.exports = app => {
     timestamps: true,
   });
 
-  FileSchema.statics.cache = async function(file) {
+  const statics = FileSchema.statics;
+
+  statics.cache = async function(file) {
     if (file.status === 'deleted') { return; }
     const key = generate_file_key(file.path);
     const serilized_file = JSON.stringify(file);
@@ -57,7 +59,7 @@ module.exports = app => {
       });
   };
 
-  FileSchema.statics.release_cache_by_path = async function(path) {
+  statics.release_cache_by_path = async function(path) {
     const key = generate_file_key(path);
     await redis.del(key)
       .catch(err => {
@@ -66,55 +68,52 @@ module.exports = app => {
       });
   };
 
-  FileSchema.statics.load_cache_by_path = async function(path) {
+  statics.load_cache_by_path = async function(path) {
     const key = generate_file_key(path);
     const project = await redis.get(key)
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
     return JSON.parse(project);
   };
 
-  FileSchema.statics.cache_tree = async function(path, tree) {
+  statics.cache_tree = async function(path, tree) {
     const key = generate_tree_key(path);
     await redis.hmset(key, serilize_tree(tree))
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
   };
 
-  FileSchema.statics.load_tree_cache_by_path = async function(path) {
+  statics.load_tree_cache_by_path = async function(path) {
     const key = generate_tree_key(path);
     const serilized_tree = await redis.hvals(key)
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
     return deserialize_tree(serilized_tree);
   };
 
-  FileSchema.statics.get_by_path = async function(path, from_cache = true) {
-    let file;
-
-    // load from cache
-    if (from_cache) {
-      file = await this.load_cache_by_path(path);
-      if (!empty(file)) { return file; }
-    }
-
-    // load from db
-    file = await this.findOne({ path })
-      .catch(err => { console.log(err); });
+  statics.get_by_path_from_db = async function(path) {
+    const file = await this.findOne({ path })
+      .catch(err => { console.error(err); });
     if (!empty(file)) {
       await this.cache(file);
       return file;
     }
   };
 
-  FileSchema.statics.get_by_path_from_db = async function(path) {
-    return this.get_by_path(path, false);
+  statics.get_by_path = async function(path, from_cache = true) {
+    let file;
+    if (from_cache) {
+      file = await this.load_cache_by_path(path);
+      if (!empty(file)) { return file; }
+    }
+    file = await this.get_by_path_from_db(path);
+    return file;
   };
 
-  FileSchema.statics.delete_and_release_cache_by_path = async function(path) {
+  statics.delete_and_release_cache_by_path = async function(path) {
     await this.release_cache_by_path(path);
     await this.deleteMany({ path })
       .catch(err => {
@@ -122,7 +121,21 @@ module.exports = app => {
       });
   };
 
-  FileSchema.statics.get_tree_by_path = async function(
+  statics.get_tree_by_path_from_db = async function(
+    path, recursive = false, pagination) {
+    const path_pattern = recursive ? `^${path}\/` : `^${path}\/[^\/]+$`;
+    const query_condition = { path: new RegExp(path_pattern, 'u') };
+    const selected_fields = 'name path type -_id';
+    const tree = await this.find(query_condition, selected_fields)
+      .find({ status: 'normal' })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .catch(err => { console.error(err); });
+    if (tree.length > 0 && !recursive) { this.cache_tree(path, tree); }
+    return tree;
+  };
+
+  statics.get_tree_by_path = async function(
     path, from_cache = true, recursive = false, pagination) {
     let tree;
     if (!recursive) {
@@ -132,21 +145,12 @@ module.exports = app => {
         if (tree.length > 0) { return tree; }
       }
     }
-
-    const path_pattern = recursive ? `^${path}\/` : `^${path}\/[^\/]+$`;
-    const query_condition = { path: new RegExp(path_pattern, 'u') };
-    const selected_fields = 'name path type -_id';
-    tree = await this.find(query_condition, selected_fields)
-      .find({ status: 'normal' })
-      .skip(pagination.skip)
-      .limit(pagination.limit)
-      .catch(err => { console.log(err); });
-    if (tree.length > 0 && !recursive) { this.cache_tree(path, tree); }
+    tree = this.get_tree_by_path_from_db(path, recursive, pagination);
     return tree;
   };
 
   FileSchema.post('save', async function(file) {
-    await FileSchema.statics.cache(file);
+    await statics.cache(file);
   });
 
   return mongoose.model('File', FileSchema);

@@ -21,7 +21,9 @@ module.exports = app => {
     timestamps: true,
   });
 
-  AccountSchema.statics.cache = async function(account) {
+  const statics = AccountSchema.statics;
+
+  statics.cache = async function(account) {
     const key = generate_redis_key(account.kw_username);
     const serilize_account = JSON.stringify(account);
     await redis.set(key, serilize_account)
@@ -31,7 +33,7 @@ module.exports = app => {
       });
   };
 
-  AccountSchema.statics.release_cache_by_kw_username = async function(kw_username) {
+  statics.release_cache_by_kw_username = async function(kw_username) {
     const key = generate_redis_key(kw_username);
     await redis.del(key)
       .catch(err => {
@@ -40,7 +42,7 @@ module.exports = app => {
       });
   };
 
-  AccountSchema.statics.load_cache_by_kw_username = async function(kw_username) {
+  statics.load_cache_by_kw_username = async function(kw_username) {
     const key = generate_redis_key(kw_username);
     const account = await redis.get(key)
       .catch(err => {
@@ -49,7 +51,7 @@ module.exports = app => {
     return JSON.parse(account);
   };
 
-  AccountSchema.statics.get_by_kw_username = async function(kw_username, from_cache = true) {
+  statics.get_by_kw_username = async function(kw_username, from_cache = true) {
     let account;
 
     // load from cache
@@ -60,14 +62,14 @@ module.exports = app => {
 
     // load from db
     account = await this.findOne({ kw_username })
-      .catch(err => { console.log(err); });
+      .catch(err => { console.error(err); });
     if (!empty(account)) {
       await this.cache(account);
       return account;
     }
   };
 
-  AccountSchema.statics.delete_and_release_cache_by_kw_username = async function(kw_username) {
+  statics.delete_and_release_cache_by_kw_username = async function(kw_username) {
     await this.release_cache_by_kw_username(kw_username);
     await this.deleteOne({ kw_username })
       .catch(err => {
@@ -77,7 +79,7 @@ module.exports = app => {
 
   // cache by post hook
   AccountSchema.post('save', async account => {
-    await AccountSchema.statics.cache(account);
+    await statics.cache(account);
   });
 
   return mongoose.model('Account', AccountSchema);

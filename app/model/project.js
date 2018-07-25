@@ -24,7 +24,9 @@ module.exports = app => {
     timestamps: true,
   });
 
-  ProjectSchema.statics.cache = async function(project) {
+  const statics = ProjectSchema.statics;
+
+  statics.cache = async function(project) {
     const key = generate_redis_key(project.path);
     const serilized_project = JSON.stringify(project);
     await redis.set(key, serilized_project)
@@ -34,7 +36,7 @@ module.exports = app => {
       });
   };
 
-  ProjectSchema.statics.release_cache_by_path = async function(path) {
+  statics.release_cache_by_path = async function(path) {
     const key = generate_redis_key(path);
     await redis.del(key)
       .catch(err => {
@@ -43,16 +45,16 @@ module.exports = app => {
       });
   };
 
-  ProjectSchema.statics.load_cache_by_path = async function(path) {
+  statics.load_cache_by_path = async function(path) {
     const key = generate_redis_key(path);
     const project = await redis.get(key)
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
     return JSON.parse(project);
   };
 
-  ProjectSchema.statics.get_by_path = async function(path, from_cache = true) {
+  statics.get_by_path = async function(path, from_cache = true) {
     let project;
 
     // load from cache
@@ -63,18 +65,18 @@ module.exports = app => {
 
     // load from db
     project = await this.findOne({ path })
-      .catch(err => { console.log(err); });
+      .catch(err => { console.error(err); });
     if (!empty(project)) {
       await this.cache(project);
       return project;
     }
   };
 
-  ProjectSchema.statics.get_by_path_from_db = async function(path) {
+  statics.get_by_path_from_db = async function(path) {
     return this.get_by_path(path, false);
   };
 
-  ProjectSchema.statics.delete_and_release_cache_by_path = async function(path) {
+  statics.delete_and_release_cache_by_path = async function(path) {
     await this.release_cache_by_path(path);
     await this.deleteMany({ path })
       .catch(err => {
@@ -83,7 +85,7 @@ module.exports = app => {
   };
 
   ProjectSchema.post('save', async function(project) {
-    await ProjectSchema.statics.cache(project);
+    await statics.cache(project);
   });
 
   return mongoose.model('Project', ProjectSchema);
