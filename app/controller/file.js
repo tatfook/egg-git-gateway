@@ -39,6 +39,18 @@ class FileController extends Controller {
     return file_git_path_without_namespace;
   }
 
+  wrap(file) {
+    file.type = 'blob';
+    if (file.name === '.gitignore.md' || file.name === '.gitkeep') {
+      return {
+        name: file.path.match(/[^\/]+$/)[0],
+        type: 'tree',
+        path: file.path.replace(`/${file.name}`, ''),
+      };
+    }
+    return file;
+  }
+
   async load_from_gitlab(path) {
     const project = await this.ctx.model.Project
       .get_by_path(this.get_project_path(path))
@@ -48,7 +60,7 @@ class FileController extends Controller {
       });
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-    const file = await this.service.gitlab
+    let file = await this.service.gitlab
       .load_file(project._id, this.get_file_git_path_without_namespace(path))
       .catch(err => {
         this.ctx.logger.error(err);
@@ -60,6 +72,7 @@ class FileController extends Controller {
     this.throw_404_if_not_exist(file);
 
     file.path = path;
+    file = this.wrap(file);
     await this.ctx.model.File.create(file)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -71,7 +84,7 @@ class FileController extends Controller {
   throw_404_if_not_exist(file) {
     const errMsg = 'File not found';
     if (empty(file)) { this.ctx.throw(404, errMsg); }
-    if (file.status === 'deleted') { this.ctx.throw(404, errMsg); }
+    if (file.status === 'deleted' || file.type === 'tree') { this.ctx.throw(404, errMsg); }
   }
 }
 

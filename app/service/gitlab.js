@@ -144,7 +144,6 @@ class GitlabService extends Service {
 
   // file
   serialized_loaded_file(res_data) {
-    console.log(res_data);
     return {
       name: res_data.file_name,
       content: new Buffer.from(res_data.content, res_data.encoding).toString(),

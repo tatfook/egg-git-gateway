@@ -8,5 +8,11 @@ module.exports = {
     }
     return false;
   },
+  paginate(query) {
+    const limit = Number(query.pageSize) || 20;
+    const pageNo = Number(query.pageNo) || 1;
+    const skip = (pageNo - 1) * limit;
+    return { skip, limit };
+  },
 };
 
