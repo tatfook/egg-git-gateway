@@ -11,6 +11,10 @@ module.exports = () => {
   // error handler
   config.onerror = error_handler;
 
+  config.file = {
+    white_list: [ '__keepwork__' ],
+  };
+
   config.permission = {
     r: 32,
     rw: 64,

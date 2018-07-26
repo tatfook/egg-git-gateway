@@ -16,7 +16,7 @@ module.exports = app => {
   const AccountSchema = new Schema({
     _id: Number,
     name: String,
-    kw_username: { type: String, index: true },
+    kw_username: { type: String, unique: true },
   }, {
     timestamps: true,
   });

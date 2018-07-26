@@ -37,7 +37,7 @@ module.exports = app => {
 
   const FileSchema = new Schema({
     name: String,
-    path: { type: String, index: true },
+    path: { type: String, unique: true },
     content: String,
     size: Number,
     type: { type: String, default: 'blob' },

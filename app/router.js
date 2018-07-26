@@ -18,4 +18,5 @@ module.exports = app => {
   router.get('/tree/:path', controller.tree.show);
 
   router.get('/files/:path', controller.file.show);
+  router.post('/files/:path', app.jwt, controller.file.create);
 };

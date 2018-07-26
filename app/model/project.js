@@ -19,7 +19,7 @@ module.exports = app => {
     name: String,
     site_id: Number,
     sitename: String,
-    path: { type: String, index: true },
+    path: { type: String, unique: true },
     git_path: String,
   }, {
     timestamps: true,
