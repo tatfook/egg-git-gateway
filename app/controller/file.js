@@ -22,6 +22,12 @@ class FileController extends Controller {
     this.ctx.body = { content: file.content };
   }
 
+  async create() { return ''; }
+  async update() { return ''; }
+  async remove() { return ''; }
+  async move() { return ''; }
+  async rename() { return ''; }
+
   async dump() {
     const file = await this.load_from_gitlab(this.ctx.params.path, false);
     this.ctx.body = { content: file.content };
@@ -33,10 +39,10 @@ class FileController extends Controller {
     return project_path;
   }
 
-  get_file_git_path_without_namespace(path) {
-    const to_replace = /^[^\/]+\/[^\/]+\//;
-    const file_git_path_without_namespace = path.replace(`${to_replace}`, '');
-    return file_git_path_without_namespace;
+  get_path_without_namespace(path) {
+    const name_space_pattern = /^[^\/]+\/[^\/]+\//;
+    const path_without_namespace = path.replace(`${name_space_pattern}`, '');
+    return path_without_namespace;
   }
 
   wrap(file) {
@@ -61,7 +67,7 @@ class FileController extends Controller {
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
     let file = await this.service.gitlab
-      .load_file(project._id, this.get_file_git_path_without_namespace(path))
+      .load_file(project._id, this.get_path_without_namespace(path))
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {

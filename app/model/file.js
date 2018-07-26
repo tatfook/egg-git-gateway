@@ -46,6 +46,19 @@ module.exports = app => {
     timestamps: true,
   });
 
+  FileSchema.virtual('project_path').get(function() {
+    const project_path_pattern = /^[^\/]+\/[^\/]+/;
+    const project_path = this.path.match(project_path_pattern)[0];
+    return project_path;
+  });
+
+  FileSchema.virtual('path_without_namespace').get(function() {
+    const name_space_pattern = /^[^\/]+\/[^\/]+\//;
+    const path_without_namespace = this.path.replace(`${name_space_pattern}`, '');
+    return path_without_namespace;
+  });
+
+
   const statics = FileSchema.statics;
 
   statics.cache = async function(file) {
