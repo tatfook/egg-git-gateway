@@ -10,6 +10,7 @@ describe('test/app/model/project.test.js', () => {
 
   const project = {
     _id: 12345,
+    site_id: 456,
     sitename: 'test1',
     visibility: 'private',
     name: 'keepworktest1',
@@ -26,6 +27,7 @@ describe('test/app/model/project.test.js', () => {
     assert(cached_data._id === project._id);
     assert(cached_data.visibility === project.visibility);
     assert(cached_data.name === project.name);
+    assert(cached_data.site_id === project.site_id);
     assert(cached_data.sitename === project.sitename);
     assert(cached_data.path === project.path);
     assert(cached_data.git_path === project.git_path);

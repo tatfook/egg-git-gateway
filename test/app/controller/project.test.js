@@ -5,6 +5,7 @@ const { app, assert } = require('egg-mock/bootstrap');
 describe('test/app/controller/project.test.js', () => {
   const project = {
     sitename: 'justtest1234',
+    site_id: 123,
     hook_url: 'http://stage.keepwork.com/api/wiki/models/data_source/gitlabWebhook',
     visibility: 'public',
   };

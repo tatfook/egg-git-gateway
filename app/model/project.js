@@ -17,6 +17,7 @@ module.exports = app => {
     _id: Number,
     visibility: { type: String, default: 'public' },
     name: String,
+    site_id: Number,
     sitename: String,
     path: { type: String, index: true },
     git_path: String,

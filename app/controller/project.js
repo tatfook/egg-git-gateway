@@ -5,6 +5,7 @@ const { empty } = require('../helper');
 
 const create_rule = {
   sitename: 'string',
+  site_id: { type: 'int', required: false },
   hook_url: 'url',
   visibility: [ 'public', 'private' ],
 };
@@ -37,6 +38,7 @@ class ProjectController extends Controller {
 
     project.sitename = this.ctx.request.body.sitename;
     project.path = `${this.ctx.params.kw_username}/${project.sitename}`;
+    project.site_id = this.ctx.request.body.site_id;
 
     await this.ctx.model.Project
       .create(project)
