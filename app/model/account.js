@@ -17,9 +17,7 @@ module.exports = app => {
     _id: Number,
     name: String,
     kw_username: { type: String, unique: true },
-  }, {
-    timestamps: true,
-  });
+  }, { timestamps: true });
 
   const statics = AccountSchema.statics;
 

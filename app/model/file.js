@@ -15,9 +15,18 @@ const generate_tree_key = path => {
 
 const serilize_tree = tree => {
   const serilized_tree = [];
-  for (const node of tree) {
-    serilized_tree.push(node.path);
-    serilized_tree.push(JSON.stringify(node));
+  if (tree instanceof Array) {
+    for (const node of tree) {
+      serilized_tree.push(node.path);
+      serilized_tree.push(JSON.stringify(node));
+    }
+  } else {
+    serilized_tree.push(tree.path);
+    serilized_tree.push(JSON.stringify({
+      type: tree.type,
+      name: tree.name,
+      path: tree.path,
+    }));
   }
   return serilized_tree;
 };
@@ -39,12 +48,9 @@ module.exports = app => {
     name: String,
     path: { type: String, unique: true },
     content: String,
-    size: Number,
     type: { type: String, default: 'blob' },
     status: { type: String, default: 'normal' },
-  }, {
-    timestamps: true,
-  });
+  }, { timestamps: true });
 
   FileSchema.virtual('project_path').get(function() {
     const project_path_pattern = /^[^\/]+\/[^\/]+/;
@@ -52,12 +58,11 @@ module.exports = app => {
     return project_path;
   });
 
-  FileSchema.virtual('path_without_namespace').get(function() {
-    const name_space_pattern = /^[^\/]+\/[^\/]+\//;
-    const path_without_namespace = this.path.replace(`${name_space_pattern}`, '');
-    return path_without_namespace;
+  FileSchema.virtual('tree_path').get(function() {
+    const file_name_pattern = new RegExp(`/${this.name}$`, 'u');
+    const tree_path = this.path.replace(file_name_pattern, '');
+    return tree_path;
   });
-
 
   const statics = FileSchema.statics;
 
@@ -67,18 +72,21 @@ module.exports = app => {
     const serilized_file = JSON.stringify(file);
     await redis.set(key, serilized_file)
       .catch(err => {
-        console.log(`fail to cache file ${key}`);
+        console.log(`failed to cache file ${key}`);
         console.error(err);
       });
+    await this.cache_tree_if_exists(file.tree_path, file);
   };
 
-  statics.release_cache_by_path = async function(path) {
-    const key = generate_file_key(path);
+  statics.release_cache = async function(file) {
+    const key = generate_file_key(file.path);
     await redis.del(key)
       .catch(err => {
-        console.log(`fail to release cache of file ${key}`);
+        console.log(`failed to release cache of file ${key}`);
         console.error(err);
       });
+    await this.release_node_cache(file);
+    if (file.type === 'tree') { await this.release_tree_cache(file); }
   };
 
   statics.load_cache_by_path = async function(path) {
@@ -98,6 +106,12 @@ module.exports = app => {
       });
   };
 
+  statics.cache_tree_if_exists = async function(path, tree) {
+    const key = generate_tree_key(path);
+    const exists = await redis.exists(key);
+    if (exists) { await this.cache_tree(path, tree); }
+  };
+
   statics.load_tree_cache_by_path = async function(path) {
     const key = generate_tree_key(path);
     const serilized_tree = await redis.hvals(key)
@@ -105,6 +119,25 @@ module.exports = app => {
         console.error(err);
       });
     return deserialize_tree(serilized_tree);
+  };
+
+  // todo: release recursive
+  statics.release_tree_cache = async function(file) {
+    const key = generate_tree_key(file.path);
+    await redis.del(key)
+      .catch(err => {
+        console.log(`failed to release cache of tree ${key}`);
+        console.error(err);
+      });
+  };
+
+  statics.release_node_cache = async function(file) {
+    const key = generate_tree_key(file.tree_path);
+    await redis.hdel(key, file.path)
+      .catch(err => {
+        console.log(`failed to release cache of tree ${key}`);
+        console.error(err);
+      });
   };
 
   statics.get_by_path_from_db = async function(path) {
@@ -126,10 +159,20 @@ module.exports = app => {
     return file;
   };
 
-  statics.delete_and_release_cache_by_path = async function(path) {
-    await this.release_cache_by_path(path);
-    await this.deleteMany({ path })
+  statics.delete_and_release_cache = async function(file, hard = false) {
+    await this.release_cache(file);
+    const path = file.path;
+    if (hard) {
+      await file.remove()
+        .catch(err => {
+          console.log(`failed to hard delete file ${path}`);
+          throw err;
+        });
+      return;
+    }
+    await file.set({ status: 'deleted' }).save()
       .catch(err => {
+        console.log(`failed to soft delete file ${path}`);
         throw err;
       });
   };
@@ -144,7 +187,7 @@ module.exports = app => {
       .skip(pagination.skip)
       .limit(pagination.limit)
       .catch(err => { console.error(err); });
-    if (tree.length > 0 && !recursive) { this.cache_tree(path, tree); }
+    if (tree.length > 0 && !recursive) { await this.cache_tree(path, tree); }
     return tree;
   };
 
@@ -158,7 +201,7 @@ module.exports = app => {
         if (tree.length > 0) { return tree; }
       }
     }
-    tree = this.get_tree_by_path_from_db(path, recursive, pagination);
+    tree = await this.get_tree_by_path_from_db(path, recursive, pagination);
     return tree;
   };
 

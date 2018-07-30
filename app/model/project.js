@@ -21,9 +21,7 @@ module.exports = app => {
     sitename: String,
     path: { type: String, unique: true },
     git_path: String,
-  }, {
-    timestamps: true,
-  });
+  }, { timestamps: true });
 
   const statics = ProjectSchema.statics;
 

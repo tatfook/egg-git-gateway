@@ -4,13 +4,14 @@ const Controller = require('egg').Controller;
 const { empty } = require('../helper');
 
 const create_rule = {
-  branch: { type: 'string', default: 'master' },
+  branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false },
   commit_message: { type: 'string', required: false },
   encoding: {
     type: 'enum',
     values: [ 'text', 'base64' ],
     default: 'text',
+    required: false,
   },
 };
 
@@ -26,7 +27,7 @@ class FileController extends Controller {
       });
 
     if (empty(file)) {
-      file = await this.load_from_gitlab(path);
+      file = await this.load_from_gitlab();
     }
 
     this.throw_if_not_exist(file);
@@ -35,10 +36,75 @@ class FileController extends Controller {
 
   async create() {
     this.ctx.validate(create_rule);
+    const path = this.ctx.params.path;
+    const project = await this.get_writable_project();
+    let file = await this.ctx.model.File
+      .get_by_path(path)
+      .catch(err => {
+        this.ctx.logger(err);
+        this.ctx.throw(500);
+      });
+
+    const soft_deleted = this.throw_if_exists(file);
+    if (!soft_deleted) { file = new this.ctx.model.File(); }
+    file.set({
+      name: this.get_file_name(),
+      content: this.ctx.request.body.content,
+      status: 'normal',
+      path,
+    });
+
+    const commit_options = {
+      commit_message: this.ctx.request.body.commit_message,
+      encoding: this.ctx.request.body.encoding,
+      author: this.ctx.user.username,
+    };
+    const commit = await this.ctx.model.Commit
+      .create_file(file, project._id, commit_options)
+      .catch(async err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await file.save().catch(err => {
+      this.ctx.logger(err);
+      this.ctx.throw(500);
+    });
+    this.ctx.body = commit;
+  }
+
+  async remove() {
+    const path = this.ctx.params.path;
+    const project = await this.get_writable_project();
+    const file = await this.ctx.model.File
+      .get_by_path_from_db(path)
+      .catch(err => {
+        this.ctx.logger(err);
+        this.ctx.throw(500);
+      });
+    await this.throw_if_not_exist(file);
+
+    const commit_options = {
+      commit_message: this.ctx.request.body.commit_message,
+      author: this.ctx.user.username,
+    };
+    await this.ctx.model.Commit
+      .delete_file(file, project._id, commit_options)
+      .catch(async err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await this.ctx.model.File
+      .delete_and_release_cache(file)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    this.ctx.status = 204;
   }
 
   async update() { return ''; }
-  async remove() { return ''; }
   async move() { return ''; }
   async rename() { return ''; }
 
@@ -47,16 +113,16 @@ class FileController extends Controller {
     this.ctx.body = { content: file.content };
   }
 
-  get_project_path(path) {
-    const project_path_pattern = /^[^\/]+\/[^\/]+/;
-    const project_path = path.match(project_path_pattern)[0];
-    return project_path;
+  get_file_name() {
+    const file_name_pattern = /[^\/]+$/;
+    const file_name = this.ctx.params.path.match(file_name_pattern)[0];
+    return file_name;
   }
 
-  get_path_without_namespace(path) {
-    const name_space_pattern = /^[^\/]+\/[^\/]+\//;
-    const path_without_namespace = path.replace(`${name_space_pattern}`, '');
-    return path_without_namespace;
+  get_project_path() {
+    const project_path_pattern = /^[^\/]+\/[^\/]+/;
+    const project_path = this.ctx.params.path.match(project_path_pattern)[0];
+    return project_path;
   }
 
   filter_file_or_folder(file) {
@@ -71,9 +137,10 @@ class FileController extends Controller {
     return file;
   }
 
-  async load_from_gitlab(path) {
+  async load_from_gitlab() {
+    const project_path = this.get_project_path();
     const project = await this.ctx.model.Project
-      .get_by_path(this.get_project_path(path))
+      .get_by_path(project_path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -81,7 +148,7 @@ class FileController extends Controller {
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
     let file = await this.service.gitlab
-      .load_file(project._id, this.get_path_without_namespace(path))
+      .load_file(project._id, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {
@@ -91,7 +158,7 @@ class FileController extends Controller {
       });
     this.throw_if_not_exist(file);
 
-    file.path = path;
+    file.path = this.ctx.params.path;
     file = this.filter_file_or_folder(file);
     await this.ctx.model.File.create(file)
       .catch(err => {
@@ -107,10 +174,19 @@ class FileController extends Controller {
     if (file.status === 'deleted' || file.type === 'tree') { this.ctx.throw(404, errMsg); }
   }
 
+  throw_if_exists(file) {
+    let soft_deleted;
+    if (!empty(file)) {
+      soft_deleted = (file.status === 'deleted');
+      if (!soft_deleted) { this.ctx.throw(409); }
+    }
+    return soft_deleted;
+  }
+
   async get_project() {
-    const path = this.ctx.params.path;
+    const project_path = this.get_project_path();
     const project = await this.ctx.model.Project
-      .get_by_path(this.get_project_path(path))
+      .get_by_path(project_path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);

@@ -1,41 +1,76 @@
 'use strict';
 
 class CommitFormatter {
-  static output(actions, project_id, commit_message, options) {
+  static output(actions, project_id, options) {
     return {
-      branch: options.branch,
+      branch: options.branch || 'master',
       id: project_id,
-      author_name: options.author,
+      author_name: options.author || null,
+      commit_message: options.commit_message,
       actions,
-      commit_message,
     };
   }
 
-  static wrap_create_action(file, options) {
+  static formmat_create_action(file, options) {
     return {
       action: 'create',
-      file_path: file.path_without_namespace,
+      file_path: file.path,
       content: file.content,
-      encoding: options.encoding,
+      encoding: options.encoding || 'text',
     };
+  }
+
+  // static wrap_update_action(file, options) {
+  //   return {
+  //     action: 'update',
+  //     file_path: file.path,
+  //     content: file.content,
+  //     encoding: options.encoding || 'text',
+  //   };
+  // }
+
+  static formmat_delete_action(file) {
+    return {
+      action: 'delete',
+      file_path: file.path,
+    };
+  }
+
+  // static wrap_move_action(file, options) {
+  //   return {
+  //     action: 'move',
+  //     file_path: file.path,
+  //     content: file.content,
+  //     encoding: options.encoding || 'text',
+  //   };
+  // }
+
+  static formmat_actions(files, action_formmater, options) {
+    let actions;
+    if (files instanceof Array) {
+      actions = files.map(function(file) {
+        return action_formmater(file, options);
+      });
+    } else {
+      actions = [ action_formmater(files, options) ];
+    }
+    return actions;
   }
 
   static create_file(files, project_id, options) {
-    let actions;
-    let commit_message;
+    const actions = this.formmat_actions(files, this.formmat_create_action, options);
+    let default_message = `${options.author} create file ${files.path}`;
+    if (files instanceof Array) { default_message = `${options.author} create files`; }
+    options.commit_message = options.commit_message || default_message;
+    return this.output(actions, project_id, options);
+  }
 
-    if (files instanceof Array) {
-      actions = files.map(function(file) {
-        return this.wrap_create_action(file);
-      });
-      commit_message = `${options.author} commit files`;
-    } else {
-      actions = [ this.wrap_create_action(files) ];
-      commit_message = `${options.author} create file ${files.path}`;
-    }
-
-    commit_message = options.commit_message || commit_message;
-    return this.output(actions, project_id, commit_message, options);
+  static delete_file(files, project_id, options) {
+    const actions = this.formmat_actions(files, this.formmat_delete_action, options);
+    let default_message = `${options.author} delete file ${files.path}`;
+    if (files instanceof Array) { default_message = `${options.author} delete files`; }
+    options.commit_message = options.commit_message || default_message;
+    return this.output(actions, project_id, options);
   }
 }
 
@@ -57,7 +92,7 @@ module.exports = app => {
     actions: [ ActionSchema ],
     commit_message: String,
     author_name: String,
-  });
+  }, { timestamps: true });
 
   const statics = CommitSchema.statics;
 
@@ -65,7 +100,16 @@ module.exports = app => {
     const commit = CommitFormatter.create_file(files, project_id, options);
     return await this.create(commit)
       .catch(err => {
-        console.log(`fail to create commit ${commit}`);
+        console.log(`failed to create commit ${commit}`);
+        throw err;
+      });
+  };
+
+  statics.delete_file = async function(files, project_id, options) {
+    const commit = CommitFormatter.delete_file(files, project_id, options);
+    return await this.create(commit)
+      .catch(err => {
+        console.log(`failed to create commit ${commit}`);
         throw err;
       });
   };

@@ -7,11 +7,11 @@ module.exports = {
       errMsg = 'No valid authorization token was found';
     } else if (!this.state.user) {
       errMsg = 'No valid authorization token was found';
-    } else if (!this.state.user.id) {
+    } else if (!this.state.user._id) {
       errMsg = 'Invalid token';
     } else {
       const permitted = await this.service.keepwork.ensurePermission(
-        this.state.user.id, site_id, type);
+        this.state.user._id, site_id, type);
       if (!permitted) {
         errMsg = 'Not allowed to access this protected resource';
       }
