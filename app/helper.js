@@ -9,9 +9,9 @@ module.exports = {
     return false;
   },
   paginate(query) {
-    const limit = Number(query.pageSize) || 20;
-    const pageNo = Number(query.pageNo) || 1;
-    const skip = (pageNo - 1) * limit;
+    const limit = Number(query.per_page) || 20;
+    const page = Number(query.page) || 1;
+    const skip = (page - 1) * limit;
     return { skip, limit };
   },
 };

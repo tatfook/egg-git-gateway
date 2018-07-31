@@ -13,6 +13,12 @@ const generate_tree_key = path => {
   return `tree:${path}`;
 };
 
+const serilize_file = file => JSON.stringify({
+  path: file.path,
+  type: file.type,
+  content: file.content,
+});
+
 const serilize_tree = tree => {
   const serilized_tree = [];
   if (tree instanceof Array) {
@@ -49,7 +55,7 @@ module.exports = app => {
     path: { type: String, unique: true },
     content: String,
     type: { type: String, default: 'blob' },
-    status: { type: String, default: 'normal' },
+    status: String,
   }, { timestamps: true });
 
   FileSchema.virtual('project_path').get(function() {
@@ -67,29 +73,39 @@ module.exports = app => {
   const statics = FileSchema.statics;
 
   statics.cache = async function(file) {
-    if (file.status === 'deleted') { return; }
-    const key = generate_file_key(file.path);
-    const serilized_file = JSON.stringify(file);
-    await redis.set(key, serilized_file)
-      .catch(err => {
-        console.log(`failed to cache file ${key}`);
-        console.error(err);
-      });
+    await this.cache_content(file);
+    const update_content_only = (file.status === 'updating');
+    if (update_content_only) { return; }
     await this.cache_tree_if_exists(file.tree_path, file);
   };
 
   statics.release_cache = async function(file) {
+    await this.release_cache_content(file);
+    await this.release_node_cache(file);
+    if (file.type === 'tree') { await this.release_tree_cache(file); }
+  };
+
+  statics.cache_content = async function(file) {
+    const soft_deleting = (file.status === 'deleting');
+    if (soft_deleting) { return; }
+    const key = generate_file_key(file.path);
+    await redis.set(key, serilize_file(file))
+      .catch(err => {
+        console.log(`failed to cache file ${key}`);
+        console.error(err);
+      });
+  };
+
+  statics.release_cache_content = async function(file) {
     const key = generate_file_key(file.path);
     await redis.del(key)
       .catch(err => {
         console.log(`failed to release cache of file ${key}`);
         console.error(err);
       });
-    await this.release_node_cache(file);
-    if (file.type === 'tree') { await this.release_tree_cache(file); }
   };
 
-  statics.load_cache_by_path = async function(path) {
+  statics.load_content_cache_by_path = async function(path) {
     const key = generate_file_key(path);
     const project = await redis.get(key)
       .catch(err => {
@@ -152,7 +168,7 @@ module.exports = app => {
   statics.get_by_path = async function(path, from_cache = true) {
     let file;
     if (from_cache) {
-      file = await this.load_cache_by_path(path);
+      file = await this.load_content_cache_by_path(path);
       if (!empty(file)) { return file; }
     }
     file = await this.get_by_path_from_db(path);
@@ -163,14 +179,14 @@ module.exports = app => {
     await this.release_cache(file);
     const path = file.path;
     if (hard) {
-      await file.remove()
+      await this.deleteOne({ path })
         .catch(err => {
           console.log(`failed to hard delete file ${path}`);
           throw err;
         });
       return;
     }
-    await file.set({ status: 'deleted' }).save()
+    await this.updateOne({ path }, { status: 'deleting' })
       .catch(err => {
         console.log(`failed to soft delete file ${path}`);
         throw err;

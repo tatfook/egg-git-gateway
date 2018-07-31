@@ -19,5 +19,6 @@ module.exports = app => {
 
   router.get('/files/:path', controller.file.show);
   router.post('/files/:path', app.jwt, controller.file.create);
+  router.put('/files/:path', app.jwt, controller.file.update);
   router.delete('/files/:path', app.jwt, controller.file.remove);
 };

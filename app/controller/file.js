@@ -3,7 +3,7 @@
 const Controller = require('egg').Controller;
 const { empty } = require('../helper');
 
-const create_rule = {
+const create_update_rule = {
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false },
   commit_message: { type: 'string', required: false },
@@ -35,7 +35,7 @@ class FileController extends Controller {
   }
 
   async create() {
-    this.ctx.validate(create_rule);
+    this.ctx.validate(create_update_rule);
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     let file = await this.ctx.model.File
@@ -45,12 +45,12 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    const soft_deleted = this.throw_if_exists(file);
-    if (!soft_deleted) { file = new this.ctx.model.File(); }
+    const deleting = this.throw_if_exists(file);
+    if (!deleting) { file = new this.ctx.model.File(); }
     file.set({
       name: this.get_file_name(),
       content: this.ctx.request.body.content,
-      status: 'normal',
+      status: 'creating',
       path,
     });
 
@@ -59,7 +59,7 @@ class FileController extends Controller {
       encoding: this.ctx.request.body.encoding,
       author: this.ctx.user.username,
     };
-    const commit = await this.ctx.model.Commit
+    await this.ctx.model.Commit
       .create_file(file, project._id, commit_options)
       .catch(async err => {
         this.ctx.logger.error(err);
@@ -70,7 +70,42 @@ class FileController extends Controller {
       this.ctx.logger(err);
       this.ctx.throw(500);
     });
-    this.ctx.body = commit;
+    this.ctx.status = 201;
+  }
+
+  async update() {
+    this.ctx.validate(create_update_rule);
+    const path = this.ctx.params.path;
+    const project = await this.get_writable_project();
+    const file = await this.ctx.model.File
+      .get_by_path_from_db(path)
+      .catch(err => {
+        this.ctx.logger(err);
+        this.ctx.throw(500);
+      });
+    this.throw_if_not_exist(file);
+    file.set({
+      content: this.ctx.request.body.content,
+      status: 'updating',
+    });
+
+    const commit_options = {
+      commit_message: this.ctx.request.body.commit_message,
+      encoding: this.ctx.request.body.encoding,
+      author: this.ctx.user.username,
+    };
+    await this.ctx.model.Commit
+      .update_file(file, project._id, commit_options)
+      .catch(async err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await file.save().catch(err => {
+      this.ctx.logger(err);
+      this.ctx.throw(500);
+    });
+    this.ctx.status = 204;
   }
 
   async remove() {
@@ -104,9 +139,8 @@ class FileController extends Controller {
     this.ctx.status = 204;
   }
 
-  async update() { return ''; }
+
   async move() { return ''; }
-  async rename() { return ''; }
 
   async dump() {
     const file = await this.load_from_gitlab(this.ctx.params.path, false);
@@ -126,14 +160,15 @@ class FileController extends Controller {
   }
 
   filter_file_or_folder(file) {
-    file.type = 'blob';
-    if (file.name === '.gitignore.md' || file.name === '.gitkeep') {
+    const is_folder = (file.name === '.gitignore.md' || file.name === '.gitkeep');
+    if (is_folder) {
       return {
         name: file.path.match(/[^\/]+$/)[0],
         type: 'tree',
         path: file.path.replace(`/${file.name}`, ''),
       };
     }
+    file.type = 'blob';
     return file;
   }
 
@@ -171,16 +206,15 @@ class FileController extends Controller {
   throw_if_not_exist(file) {
     const errMsg = 'File not found';
     if (empty(file)) { this.ctx.throw(404, errMsg); }
-    if (file.status === 'deleted' || file.type === 'tree') { this.ctx.throw(404, errMsg); }
+    if (file.status === 'deleting' || file.type === 'tree') { this.ctx.throw(404, errMsg); }
   }
 
   throw_if_exists(file) {
-    let soft_deleted;
     if (!empty(file)) {
-      soft_deleted = (file.status === 'deleted');
-      if (!soft_deleted) { this.ctx.throw(409); }
+      const deleting = (file.status === 'deleting');
+      if (!deleting) { this.ctx.throw(409); }
+      return deleting;
     }
-    return soft_deleted;
   }
 
   async get_project() {

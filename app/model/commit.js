@@ -20,14 +20,14 @@ class CommitFormatter {
     };
   }
 
-  // static wrap_update_action(file, options) {
-  //   return {
-  //     action: 'update',
-  //     file_path: file.path,
-  //     content: file.content,
-  //     encoding: options.encoding || 'text',
-  //   };
-  // }
+  static wrap_update_action(file, options) {
+    return {
+      action: 'update',
+      file_path: file.path,
+      content: file.content,
+      encoding: options.encoding || 'text',
+    };
+  }
 
   static formmat_delete_action(file) {
     return {
@@ -65,6 +65,14 @@ class CommitFormatter {
     return this.output(actions, project_id, options);
   }
 
+  static update_file(files, project_id, options) {
+    const actions = this.formmat_actions(files, this.wrap_update_action, options);
+    let default_message = `${options.author} update file ${files.path}`;
+    if (files instanceof Array) { default_message = `${options.author} update files`; }
+    options.commit_message = options.commit_message || default_message;
+    return this.output(actions, project_id, options);
+  }
+
   static delete_file(files, project_id, options) {
     const actions = this.formmat_actions(files, this.formmat_delete_action, options);
     let default_message = `${options.author} delete file ${files.path}`;
@@ -98,6 +106,15 @@ module.exports = app => {
 
   statics.create_file = async function(files, project_id, options) {
     const commit = CommitFormatter.create_file(files, project_id, options);
+    return await this.create(commit)
+      .catch(err => {
+        console.log(`failed to create commit ${commit}`);
+        throw err;
+      });
+  };
+
+  statics.update_file = async function(files, project_id, options) {
+    const commit = CommitFormatter.update_file(files, project_id, options);
     return await this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
