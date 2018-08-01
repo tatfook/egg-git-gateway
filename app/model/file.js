@@ -58,19 +58,39 @@ module.exports = app => {
     status: String,
   }, { timestamps: true });
 
+  const statics = FileSchema.statics;
+
   FileSchema.virtual('project_path').get(function() {
-    const project_path_pattern = /^[^\/]+\/[^\/]+/;
-    const project_path = this.path.match(project_path_pattern)[0];
-    return project_path;
+    return statics.get_project_path(this.path);
   });
 
   FileSchema.virtual('tree_path').get(function() {
-    const file_name_pattern = new RegExp(`/${this.name}$`, 'u');
-    const tree_path = this.path.replace(file_name_pattern, '');
-    return tree_path;
+    return statics.get_tree_path(this.path, this.name);
   });
 
-  const statics = FileSchema.statics;
+  statics.get_file_name = function(path) {
+    const file_name_pattern = /[^\/]+$/;
+    const file_name = path.match(file_name_pattern)[0];
+    return file_name;
+  };
+
+  statics.get_tree_path = function(path, file_name) {
+    if (!file_name) { file_name = this.get_file_name(path); }
+    const file_name_pattern = new RegExp(`/${file_name}$`, 'u');
+    const tree_path = path.replace(file_name_pattern, '');
+    return tree_path;
+  };
+
+  statics.get_project_path = function(path) {
+    const project_path_pattern = /^[^\/]+\/[^\/]+/;
+    try {
+      const project_path = path.match(project_path_pattern)[0];
+      return project_path;
+    } catch (err) {
+      console.log('invalid path');
+      throw err;
+    }
+  };
 
   statics.cache = async function(file) {
     await this.cache_content(file);
@@ -93,6 +113,17 @@ module.exports = app => {
       .catch(err => {
         console.log(`failed to cache file ${key}`);
         console.error(err);
+      });
+  };
+
+  statics.move_cache = async function(file) {
+    assert(file.previous_path);
+    const promise_move_content = this.move_content_cache(file);
+    const promise_update_tree = this.release_node_cache({ path: file.previous_path });
+    await Promise.all([ promise_move_content, promise_update_tree ])
+      .catch(errs => {
+        console.error(errs);
+        throw errs;
       });
   };
 
@@ -147,12 +178,25 @@ module.exports = app => {
       });
   };
 
-  statics.release_node_cache = async function(file) {
-    const key = generate_tree_key(file.tree_path);
-    await redis.hdel(key, file.path)
+  statics.release_node_cache = function(file) {
+    const tree_path = this.get_tree_path(file.path);
+    const key = generate_tree_key(tree_path);
+    return redis.hdel(key, file.path)
       .catch(err => {
         console.log(`failed to release cache of tree ${key}`);
         console.error(err);
+        throw err;
+      });
+  };
+
+  statics.move_content_cache = function(file) {
+    const pre_key = generate_file_key(file.previous_path);
+    const new_key = generate_file_key(file.path);
+    return redis.rename(pre_key, new_key)
+      .catch(err => {
+        console.log(`failed to move cache of file ${pre_key}`);
+        console.error(err);
+        throw err;
       });
   };
 
@@ -173,6 +217,19 @@ module.exports = app => {
     }
     file = await this.get_by_path_from_db(path);
     return file;
+  };
+
+  statics.move = async function(file) {
+    await this.move_cache(file)
+      .catch(err => {
+        console.error(err);
+        throw err;
+      });
+    await file.save()
+      .catch(err => {
+        console.error(err);
+        throw err;
+      });
   };
 
   statics.delete_and_release_cache = async function(file, hard = false) {
@@ -219,6 +276,18 @@ module.exports = app => {
     }
     tree = await this.get_tree_by_path_from_db(path, recursive, pagination);
     return tree;
+  };
+
+  statics.ensure_parent_exist = async function(path) {
+    const ancestor_names = path.split('/');
+    if (ancestor_names.length <= 3) { return; }
+    const file_name = ancestor_names[ancestor_names.length - 1];
+    const parent_path = this.get_tree_path(path, file_name);
+    const parent = await this.get_by_path(parent_path);
+    if (empty(parent)) {
+      const errMsg = `Parent folder ${parent_path} not found`;
+      return errMsg;
+    }
   };
 
   FileSchema.post('save', async function(file) {

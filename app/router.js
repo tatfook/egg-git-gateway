@@ -9,16 +9,17 @@ module.exports = app => {
   router.resources('home', '/', controller.home);
 
   router.post('/accounts', controller.account.create);
-  router.delete('/accounts/:kw_username', controller.account.destroy);
+  router.del('/accounts/:kw_username', controller.account.destroy);
 
   router.post('/projects/user/:kw_username', controller.project.create);
   router.put('/projects/:path/visibility', controller.project.update_visibility);
-  router.delete('/projects/:path', controller.project.destroy);
+  router.del('/projects/:path', controller.project.destroy);
 
   router.get('/tree/:path', controller.tree.show);
 
   router.get('/files/:path', controller.file.show);
   router.post('/files/:path', app.jwt, controller.file.create);
   router.put('/files/:path', app.jwt, controller.file.update);
-  router.delete('/files/:path', app.jwt, controller.file.remove);
+  router.del('/files/:path', app.jwt, controller.file.remove);
+  router.put('/files/:path/move', app.jwt, controller.file.move);
 };

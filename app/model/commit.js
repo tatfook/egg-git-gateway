@@ -20,7 +20,7 @@ class CommitFormatter {
     };
   }
 
-  static wrap_update_action(file, options) {
+  static format_update_action(file, options) {
     return {
       action: 'update',
       file_path: file.path,
@@ -36,14 +36,17 @@ class CommitFormatter {
     };
   }
 
-  // static wrap_move_action(file, options) {
-  //   return {
-  //     action: 'move',
-  //     file_path: file.path,
-  //     content: file.content,
-  //     encoding: options.encoding || 'text',
-  //   };
-  // }
+  static format_move_action(file, options) {
+    const action = {
+      action: 'move',
+      file_path: file.path,
+      previous_path: file.previous_path,
+      encoding: options.encoding || 'text',
+    };
+
+    if (file.content) { action.content = file.content; }
+    return action;
+  }
 
   static formmat_actions(files, action_formmater, options) {
     let actions;
@@ -66,7 +69,7 @@ class CommitFormatter {
   }
 
   static update_file(files, project_id, options) {
-    const actions = this.formmat_actions(files, this.wrap_update_action, options);
+    const actions = this.formmat_actions(files, this.format_update_action, options);
     let default_message = `${options.author} update file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} update files`; }
     options.commit_message = options.commit_message || default_message;
@@ -77,6 +80,15 @@ class CommitFormatter {
     const actions = this.formmat_actions(files, this.formmat_delete_action, options);
     let default_message = `${options.author} delete file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} delete files`; }
+    options.commit_message = options.commit_message || default_message;
+    return this.output(actions, project_id, options);
+  }
+
+  static move_file(files, project_id, options) {
+    const actions = this.formmat_actions(files, this.format_move_action, options);
+    let default_message =
+      `${options.author} move file from ${files.previous_path} to ${files.path}`;
+    if (files instanceof Array) { default_message = `${options.author} move files`; }
     options.commit_message = options.commit_message || default_message;
     return this.output(actions, project_id, options);
   }
@@ -124,6 +136,15 @@ module.exports = app => {
 
   statics.delete_file = async function(files, project_id, options) {
     const commit = CommitFormatter.delete_file(files, project_id, options);
+    return await this.create(commit)
+      .catch(err => {
+        console.log(`failed to create commit ${commit}`);
+        throw err;
+      });
+  };
+
+  statics.move_file = async function(files, project_id, options) {
+    const commit = CommitFormatter.move_file(files, project_id, options);
     return await this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
