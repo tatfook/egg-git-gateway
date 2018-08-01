@@ -4,15 +4,19 @@ const Service = require('egg').Service;
 const Axios = require('axios');
 const assert = require('assert');
 
+let Client;
+
 class GitlabService extends Service {
-  constructor(ctx) {
-    super(ctx);
-    const GITLAB_CONFIG = this.config.gitlab;
-    this.client = Axios.create({
-      baseURL: `${GITLAB_CONFIG.url}/api/v4`,
-      headers: { 'private-token': GITLAB_CONFIG.admin_token },
-      timeout: 30 * 1000,
-    });
+  get client() {
+    if (!Client) {
+      const GITLAB_CONFIG = this.config.gitlab;
+      Client = Axios.create({
+        baseURL: `${GITLAB_CONFIG.url}/api/v4`,
+        headers: { 'private-token': GITLAB_CONFIG.admin_token },
+        timeout: 30 * 1000,
+      });
+    }
+    return Client;
   }
 
   // account
