@@ -6,6 +6,9 @@
 module.exports = app => {
   const { router, controller } = app;
 
+  const url_prefix = app.config.url_prefix;
+  if (url_prefix) { router.prefix(url_prefix); }
+
   router.resources('home', '/', controller.home);
 
   router.post('/accounts', controller.account.create);

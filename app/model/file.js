@@ -92,48 +92,39 @@ module.exports = app => {
     }
   };
 
-  statics.cache = async function(file) {
-    await this.cache_content(file);
+  statics.cache = async function(file, pipeline = redis.pipeline()) {
+    this.cache_content(file, pipeline);
     const update_content_only = (file.status === 'updating');
-    if (update_content_only) { return; }
-    await this.cache_tree_if_exists(file.tree_path, file);
+    if (!update_content_only) {
+      await this.cache_tree_if_exists(file.tree_path, file, pipeline);
+    }
+    return pipeline;
   };
 
-  statics.release_cache = async function(file) {
-    await this.release_cache_content(file);
-    await this.release_node_cache(file);
-    if (file.type === 'tree') { await this.release_tree_cache(file); }
+  statics.release_cache = function(file, pipeline = redis.pipeline()) {
+    this.release_content_cache(file, pipeline);
+    this.release_node_cache(file, pipeline);
+    if (file.type === 'tree') { this.release_tree_cache(file, pipeline); }
+    return pipeline;
   };
 
-  statics.cache_content = async function(file) {
+  statics.cache_content = function(file, pipeline = redis.pipeline()) {
     const soft_deleting = (file.status === 'deleting');
-    if (soft_deleting) { return; }
+    if (soft_deleting) { return pipeline; }
     const key = generate_file_key(file.path);
-    await redis.set(key, serilize_file(file))
-      .catch(err => {
-        console.log(`failed to cache file ${key}`);
-        console.error(err);
-      });
+    pipeline.set(key, serilize_file(file));
   };
 
-  statics.move_cache = async function(file) {
+  statics.move_cache = async function(file, pipeline = redis.pipeline()) {
     assert(file.previous_path);
-    const promise_move_content = this.move_content_cache(file);
-    const promise_update_tree = this.release_node_cache({ path: file.previous_path });
-    await Promise.all([ promise_move_content, promise_update_tree ])
-      .catch(errs => {
-        console.error(errs);
-        throw errs;
-      });
+    this.release_content_cache({ path: file.previous_path }, pipeline);
+    this.release_node_cache({ path: file.previous_path }, pipeline);
+    return pipeline;
   };
 
-  statics.release_cache_content = async function(file) {
+  statics.release_content_cache = function(file, pipeline = redis.pipeline()) {
     const key = generate_file_key(file.path);
-    await redis.del(key)
-      .catch(err => {
-        console.log(`failed to release cache of file ${key}`);
-        console.error(err);
-      });
+    pipeline.del(key);
   };
 
   statics.load_content_cache_by_path = async function(path) {
@@ -145,18 +136,15 @@ module.exports = app => {
     return JSON.parse(project);
   };
 
-  statics.cache_tree = async function(path, tree) {
+  statics.cache_tree = function(path, tree, pipeline = redis.pipeline()) {
     const key = generate_tree_key(path);
-    await redis.hmset(key, serilize_tree(tree))
-      .catch(err => {
-        console.error(err);
-      });
+    pipeline.hmset(key, serilize_tree(tree));
   };
 
-  statics.cache_tree_if_exists = async function(path, tree) {
+  statics.cache_tree_if_exists = async function(path, tree, pipeline = redis.pipeline()) {
     const key = generate_tree_key(path);
     const exists = await redis.exists(key);
-    if (exists) { await this.cache_tree(path, tree); }
+    if (exists) { this.cache_tree(path, tree, pipeline); }
   };
 
   statics.load_tree_cache_by_path = async function(path) {
@@ -169,35 +157,15 @@ module.exports = app => {
   };
 
   // todo: release recursive
-  statics.release_tree_cache = async function(file) {
+  statics.release_tree_cache = function(file, pipeline = redis.pipeline()) {
     const key = generate_tree_key(file.path);
-    await redis.del(key)
-      .catch(err => {
-        console.log(`failed to release cache of tree ${key}`);
-        console.error(err);
-      });
+    pipeline.del(key);
   };
 
-  statics.release_node_cache = function(file) {
+  statics.release_node_cache = function(file, pipeline = redis.pipeline()) {
     const tree_path = this.get_tree_path(file.path);
     const key = generate_tree_key(tree_path);
-    return redis.hdel(key, file.path)
-      .catch(err => {
-        console.log(`failed to release cache of tree ${key}`);
-        console.error(err);
-        throw err;
-      });
-  };
-
-  statics.move_content_cache = function(file) {
-    const pre_key = generate_file_key(file.previous_path);
-    const new_key = generate_file_key(file.path);
-    return redis.rename(pre_key, new_key)
-      .catch(err => {
-        console.log(`failed to move cache of file ${pre_key}`);
-        console.error(err);
-        throw err;
-      });
+    pipeline.hdel(key, file.path);
   };
 
   statics.get_by_path_from_db = async function(path) {
@@ -220,7 +188,8 @@ module.exports = app => {
   };
 
   statics.move = async function(file) {
-    await this.move_cache(file)
+    const pipeline = this.release_cache({ path: file.previous_path });
+    await pipeline.exec()
       .catch(err => {
         console.error(err);
         throw err;
@@ -233,7 +202,13 @@ module.exports = app => {
   };
 
   statics.delete_and_release_cache = async function(file, hard = false) {
-    await this.release_cache(file);
+    const pipeline = this.release_cache(file);
+    await pipeline.exec()
+      .catch(err => {
+        console.error(err);
+        throw err;
+      });
+
     const path = file.path;
     if (hard) {
       await this.deleteOne({ path })
@@ -291,7 +266,16 @@ module.exports = app => {
   };
 
   FileSchema.post('save', async function(file) {
-    await statics.cache(file);
+    const pipeline = await statics.cache(file)
+      .catch(err => {
+        console.error(err);
+        throw err;
+      });
+    await pipeline.exec()
+      .catch(err => {
+        console.error(err);
+        throw err;
+      });
   });
 
   return mongoose.model('File', FileSchema);

@@ -102,7 +102,6 @@ class FileController extends Controller {
   async update() {
     this.ctx.validate(update_rule);
     const path = this.ctx.params.path;
-    console.log(this.ctx.params.branch);
     const project = await this.get_writable_project();
     const file = await this.ctx.model.File
       .get_by_path_from_db(path)
@@ -168,16 +167,15 @@ class FileController extends Controller {
 
   async move() {
     this.ctx.validate(move_rule);
-    this.throw_if_can_not_move();
     const project = await this.get_writable_project();
-    await this.throw_if_parent_node_not_exist();
+    await this.throw_if_can_not_move();
     const file = await this.ctx.model.File
       .get_by_path_from_db(this.ctx.request.body.previous_path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    await this.throw_if_not_exist(file);
+    this.throw_if_not_exist(file);
 
     const content = this.ctx.request.body.content;
     if (content) { file.content = content; }
@@ -279,7 +277,13 @@ class FileController extends Controller {
     }
   }
 
-  throw_if_can_not_move() {
+  async throw_if_can_not_move() {
+    this.throw_if_not_inside_the_same_project();
+    await this.throw_if_file_in_target_file_exist();
+    await this.throw_if_parent_node_not_exist();
+  }
+
+  throw_if_not_inside_the_same_project() {
     const new_path = this.ctx.params.path;
     const previous_path = this.ctx.request.body.previous_path;
     const project_of_new_path = this.get_project_path(new_path);
@@ -289,6 +293,16 @@ class FileController extends Controller {
       const errMsg = 'Can only move inside the same project';
       this.ctx.throw(400, errMsg);
     }
+  }
+
+  async throw_if_file_in_target_file_exist() {
+    const file_in_target_path = await this.ctx.model.File
+      .get_by_path(this.ctx.params.path)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    this.throw_if_exists(file_in_target_path);
   }
 
   async throw_if_parent_node_not_exist() {
