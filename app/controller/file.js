@@ -85,7 +85,7 @@ class FileController extends Controller {
       encoding: this.ctx.request.body.encoding,
       author: this.ctx.user.username,
     };
-    await this.ctx.model.Commit
+    const commit = await this.ctx.model.Commit
       .create_file(file, project._id, commit_options)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -96,6 +96,8 @@ class FileController extends Controller {
       this.ctx.logger.error(err);
       this.ctx.throw(500);
     });
+
+    await this.send_message(commit._id, project._id);
     this.ctx.status = 201;
   }
 
@@ -120,7 +122,7 @@ class FileController extends Controller {
       encoding: this.ctx.request.body.encoding,
       author: this.ctx.user.username,
     };
-    await this.ctx.model.Commit
+    const commit = await this.ctx.model.Commit
       .update_file(file, project._id, commit_options)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -131,6 +133,8 @@ class FileController extends Controller {
       this.ctx.logger.error(err);
       this.ctx.throw(500);
     });
+
+    await this.send_message(commit._id, project._id);
     this.ctx.status = 204;
   }
 
@@ -149,7 +153,7 @@ class FileController extends Controller {
       commit_message: this.ctx.request.body.commit_message,
       author: this.ctx.user.username,
     };
-    await this.ctx.model.Commit
+    const commit = await this.ctx.model.Commit
       .delete_file(file, project._id, commit_options)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -162,6 +166,8 @@ class FileController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
+
+    await this.send_message(commit._id, project._id);
     this.ctx.status = 204;
   }
 
@@ -189,7 +195,7 @@ class FileController extends Controller {
       encoding: this.ctx.request.body.encoding,
       author: this.ctx.user.username,
     };
-    await this.ctx.model.Commit
+    const commit = await this.ctx.model.Commit
       .move_file(file, project._id, commit_options)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -201,12 +207,22 @@ class FileController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
+
+    await this.send_message(commit._id, project._id);
     this.ctx.status = 204;
   }
 
   async dump() {
     const file = await this.load_from_gitlab(this.ctx.params.path, false);
     this.ctx.body = { content: file.content };
+  }
+
+  async send_message(commit_id, project_id) {
+    await this.service.kafka
+      .send_commit_message(commit_id, project_id)
+      .catch(err => {
+        this.ctx.logger.error(err);
+      });
   }
 
   get_file_name(path) {

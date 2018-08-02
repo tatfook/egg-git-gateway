@@ -1,17 +1,84 @@
 'use strict';
 
 const Service = require('egg').Service;
-const { KafkaClient } = require('kafka-node');
+const { KafkaClient, HighLevelProducer } = require('kafka-node');
+const { promisify, inspect } = require('util');
 
 let Client;
+let Producer;
+let promisified_send;
+let initialized = false;
 
 class KafkaService extends Service {
-  get client() {
-    if (!Client) {
-      const KEEPWORK_CONFIG = this.config.kafka;
-      Client = new KafkaClient(KEEPWORK_CONFIG.client);
+  constructor(ctx) {
+    super(ctx);
+    this.init_client();
+    this.init_producer();
+  }
+
+  async send(payloads) {
+    if (!initialized) {
+      await this.refresh_metadata();
+      initialized = true;
     }
-    return Client;
+    if (!promisified_send) {
+      promisified_send = promisify(Producer.send.bind(Producer));
+    }
+    if (!(payloads instanceof Array)) { payloads = [ payloads ]; }
+    return promisified_send(payloads);
+  }
+
+  send_commit_message(commit_id, project_id) {
+    const payloads = {
+      topic: this.config.kafka.topics.commit,
+      messages: commit_id,
+      key: project_id,
+    };
+    return this.send(payloads).then(result => {
+      this.app.logger.info(`Successfully sent messages to ${inspect(result)}`);
+      return result;
+    });
+  }
+
+  // send_elasticsearch_message() {}
+
+  init_client() {
+    if (!Client) {
+      Client = new KafkaClient(this.config.kafka.client);
+    }
+
+    this.client = Client;
+  }
+
+  init_producer() {
+    if (!Producer) {
+      const options = this.config.kafka.producer;
+      Producer = new HighLevelProducer(Client, options);
+      this.on_error();
+      this.on_ready();
+    }
+    this.producer = Producer;
+  }
+
+  async refresh_metadata() {
+    const topics = Object.values(this.config.kafka.topics);
+    await promisify(Client.refreshMetadata.bind(Client))(topics)
+      .catch(err => {
+        this.app.logger.error(err);
+      });
+  }
+
+  on_ready() {
+    Producer.on('ready', () => {
+      this.app.logger.info('Successfully connect to kafka');
+    });
+  }
+
+  on_error() {
+    Producer.on('error', err => {
+      this.app.logger.error('Fail to connect to kafka');
+      this.app.logger.error(err);
+    });
   }
 }
 
