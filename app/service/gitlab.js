@@ -45,8 +45,8 @@ class GitlabService extends Service {
     const res = await this.client
       .post('/users', account)
       .catch(err => {
-        console.log(`failed to create git account for ${user.username}`);
-        console.error(err);
+        this.app.logger.error(`failed to create git account for ${user.username}`);
+        this.app.logger.error(err);
         throw err;
       });
     return this.serialize_loaded_account(res.data);
@@ -57,8 +57,8 @@ class GitlabService extends Service {
     await this.client
       .delete(`/users/${account_id}`)
       .catch(err => {
-        console.log(`failed to delete git account ${account_id}`);
-        console.error(err);
+        this.app.logger.error(`failed to delete git account ${account_id}`);
+        this.app.logger.error(err);
         throw err;
       });
   }
@@ -97,8 +97,8 @@ class GitlabService extends Service {
     await this.client
       .post(`/projects/${project_id}/hooks`, hook_setting)
       .catch(err => {
-        console.log(`failed to set hook of project ${project_id}`);
-        console.error(err);
+        this.app.logger.error(`failed to set hook of project ${project_id}`);
+        this.app.logger.error(err);
         throw err;
       });
   }
@@ -112,8 +112,8 @@ class GitlabService extends Service {
     const res = await this.client
       .post(`/projects/user/${serialized_project.user_id}`, serialized_project)
       .catch(err => {
-        console.log(`failed to create git project ${serialized_project.name}`);
-        console.error(err);
+        this.app.logger.error(`failed to create git project ${serialized_project.name}`);
+        this.app.logger.error(err);
         throw err;
       });
     serialized_project = this.serialize_loaded_project(res.data);
@@ -128,8 +128,8 @@ class GitlabService extends Service {
     const res = await this.client
       .put(`projects/${project_id}`, { visibility })
       .catch(err => {
-        console.log(`failed to update visibility of project ${project_id}`);
-        console.error(err);
+        this.app.logger.error(`failed to update visibility of project ${project_id}`);
+        this.app.logger.error(err);
         throw err;
       });
     return this.serialize_loaded_project(res.data);
@@ -140,8 +140,8 @@ class GitlabService extends Service {
     await this.client
       .delete(`/projects/${project_id}`)
       .catch(err => {
-        console.log(`failed to delete project ${project_id}`);
-        console.error(err);
+        this.app.logger.error(`failed to delete project ${project_id}`);
+        this.app.logger.error(err);
         throw err;
       });
   }
@@ -164,8 +164,8 @@ class GitlabService extends Service {
     const res = await this.client
       .get(`/projects/${project_id}/repository/files/${file_path}?ref=master`)
       .catch(err => {
-        console.log(`failed to get file ${file_path} of project ${project_id}`);
-        console.error(err);
+        this.app.logger.error(`failed to get file ${file_path} of project ${project_id}`);
+        this.app.logger.error(err);
         throw err;
       });
     return this.serialized_loaded_file(res.data);

@@ -12,6 +12,7 @@ module.exports = app => {
   const redis = app.redis;
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
+  const logger = app.logger;
 
   const ProjectSchema = new Schema({
     _id: Number,
@@ -30,8 +31,8 @@ module.exports = app => {
     const serilized_project = JSON.stringify(project);
     await redis.set(key, serilized_project)
       .catch(err => {
-        console.log(`fail to cache project ${key}`);
-        console.error(err);
+        logger.error(`fail to cache project ${key}`);
+        logger.error(err);
       });
   };
 
@@ -39,8 +40,8 @@ module.exports = app => {
     const key = generate_redis_key(path);
     await redis.del(key)
       .catch(err => {
-        console.log(`fail to release cache of project ${key}`);
-        console.error(err);
+        logger.error(`fail to release cache of project ${key}`);
+        logger.error(err);
       });
   };
 
@@ -48,7 +49,7 @@ module.exports = app => {
     const key = generate_redis_key(path);
     const project = await redis.get(key)
       .catch(err => {
-        console.error(err);
+        logger.error(err);
       });
     return JSON.parse(project);
   };
@@ -64,7 +65,7 @@ module.exports = app => {
 
     // load from db
     project = await this.findOne({ path })
-      .catch(err => { console.error(err); });
+      .catch(err => { logger.error(err); });
     if (!empty(project)) {
       await this.cache(project);
       return project;

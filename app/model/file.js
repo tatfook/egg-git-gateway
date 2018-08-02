@@ -49,6 +49,7 @@ module.exports = app => {
   const redis = app.redis;
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
+  const logger = app.logger;
 
   const FileSchema = new Schema({
     name: String,
@@ -87,7 +88,7 @@ module.exports = app => {
       const project_path = path.match(project_path_pattern)[0];
       return project_path;
     } catch (err) {
-      console.log('invalid path');
+      logger.error('invalid path');
       throw err;
     }
   };
@@ -131,7 +132,7 @@ module.exports = app => {
     const key = generate_file_key(path);
     const project = await redis.get(key)
       .catch(err => {
-        console.error(err);
+        logger.error(err);
       });
     return JSON.parse(project);
   };
@@ -151,7 +152,7 @@ module.exports = app => {
     const key = generate_tree_key(path);
     const serilized_tree = await redis.hvals(key)
       .catch(err => {
-        console.error(err);
+        logger.error(err);
       });
     return deserialize_tree(serilized_tree);
   };
@@ -170,7 +171,7 @@ module.exports = app => {
 
   statics.get_by_path_from_db = async function(path) {
     const file = await this.findOne({ path })
-      .catch(err => { console.error(err); });
+      .catch(err => { logger.error(err); });
     if (!empty(file)) {
       await this.cache(file);
       return file;
@@ -191,12 +192,12 @@ module.exports = app => {
     const pipeline = this.release_cache({ path: file.previous_path });
     await pipeline.exec()
       .catch(err => {
-        console.error(err);
+        logger.error(err);
         throw err;
       });
     await file.save()
       .catch(err => {
-        console.error(err);
+        logger.error(err);
         throw err;
       });
   };
@@ -205,7 +206,7 @@ module.exports = app => {
     const pipeline = this.release_cache(file);
     await pipeline.exec()
       .catch(err => {
-        console.error(err);
+        logger.error(err);
         throw err;
       });
 
@@ -213,14 +214,14 @@ module.exports = app => {
     if (hard) {
       await this.deleteOne({ path })
         .catch(err => {
-          console.log(`failed to hard delete file ${path}`);
+          logger.error(`failed to hard delete file ${path}`);
           throw err;
         });
       return;
     }
     await this.updateOne({ path }, { status: 'deleting' })
       .catch(err => {
-        console.log(`failed to soft delete file ${path}`);
+        logger.error(`failed to soft delete file ${path}`);
         throw err;
       });
   };
@@ -234,7 +235,7 @@ module.exports = app => {
       .find({ status: 'normal' })
       .skip(pagination.skip)
       .limit(pagination.limit)
-      .catch(err => { console.error(err); });
+      .catch(err => { logger.error(err); });
     if (tree.length > 0 && !recursive) { await this.cache_tree(path, tree); }
     return tree;
   };
@@ -268,12 +269,12 @@ module.exports = app => {
   FileSchema.post('save', async function(file) {
     const pipeline = await statics.cache(file)
       .catch(err => {
-        console.error(err);
+        logger.error(err);
         throw err;
       });
     await pipeline.exec()
       .catch(err => {
-        console.error(err);
+        logger.error(err);
         throw err;
       });
   });

@@ -12,6 +12,7 @@ module.exports = app => {
   const redis = app.redis;
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
+  const logger = app.logger;
 
   const AccountSchema = new Schema({
     _id: Number,
@@ -26,8 +27,8 @@ module.exports = app => {
     const serilize_account = JSON.stringify(account);
     await redis.set(key, serilize_account)
       .catch(err => {
-        console.log(`fail to cache account ${key}`);
-        console.error(err);
+        logger.error(`fail to cache account ${key}`);
+        logger.error(err);
       });
   };
 
@@ -35,8 +36,8 @@ module.exports = app => {
     const key = generate_redis_key(kw_username);
     await redis.del(key)
       .catch(err => {
-        console.log(`fail to release cache of account ${key}`);
-        console.error(err);
+        logger.error(`fail to release cache of account ${key}`);
+        logger.error(err);
       });
   };
 
@@ -44,7 +45,7 @@ module.exports = app => {
     const key = generate_redis_key(kw_username);
     const account = await redis.get(key)
       .catch(err => {
-        console.error(err);
+        logger.error(err);
       });
     return JSON.parse(account);
   };
@@ -60,7 +61,7 @@ module.exports = app => {
 
     // load from db
     account = await this.findOne({ kw_username })
-      .catch(err => { console.error(err); });
+      .catch(err => { logger.error(err); });
     if (!empty(account)) {
       await this.cache(account);
       return account;

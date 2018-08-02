@@ -26,7 +26,7 @@ class KeepworkService extends Service {
       if (res.data.data >= permission) { return true; }
       return false;
     } catch (err) {
-      console.error(err);
+      this.app.logger.error(err);
       throw err;
     }
   }
