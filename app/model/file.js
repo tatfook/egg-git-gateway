@@ -56,7 +56,6 @@ module.exports = app => {
     path: { type: String, unique: true },
     content: String,
     type: { type: String, default: 'blob' },
-    status: String,
   }, { timestamps: true });
 
   const statics = FileSchema.statics;
@@ -95,10 +94,7 @@ module.exports = app => {
 
   statics.cache = async function(file, pipeline = redis.pipeline()) {
     this.cache_content(file, pipeline);
-    const update_content_only = (file.status === 'updating');
-    if (!update_content_only) {
-      await this.cache_tree_if_exists(file.tree_path, file, pipeline);
-    }
+    await this.cache_tree_if_exists(file.tree_path, file, pipeline);
     return pipeline;
   };
 
@@ -110,8 +106,6 @@ module.exports = app => {
   };
 
   statics.cache_content = function(file, pipeline = redis.pipeline()) {
-    const soft_deleting = (file.status === 'deleting');
-    if (soft_deleting) { return pipeline; }
     const key = generate_file_key(file.path);
     pipeline.set(key, serilize_file(file));
   };
@@ -202,7 +196,7 @@ module.exports = app => {
       });
   };
 
-  statics.delete_and_release_cache = async function(file, hard = false) {
+  statics.delete_and_release_cache = async function(file) {
     const pipeline = this.release_cache(file);
     await pipeline.exec()
       .catch(err => {
@@ -211,17 +205,9 @@ module.exports = app => {
       });
 
     const path = file.path;
-    if (hard) {
-      await this.deleteOne({ path })
-        .catch(err => {
-          logger.error(`failed to hard delete file ${path}`);
-          throw err;
-        });
-      return;
-    }
-    await this.updateOne({ path }, { status: 'deleting' })
+    await this.deleteOne({ path })
       .catch(err => {
-        logger.error(`failed to soft delete file ${path}`);
+        logger.error(`failed to hard delete file ${path}`);
         throw err;
       });
   };
@@ -232,7 +218,6 @@ module.exports = app => {
     const query_condition = { path: new RegExp(path_pattern, 'u') };
     const selected_fields = 'name path type -_id';
     const tree = await this.find(query_condition, selected_fields)
-      .find({ status: 'normal' })
       .skip(pagination.skip)
       .limit(pagination.limit)
       .catch(err => { logger.error(err); });

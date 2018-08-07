@@ -48,6 +48,14 @@ class CommitFormatter {
     return action;
   }
 
+  static formmat_create_folder_action(file) {
+    return {
+      action: 'create',
+      file_path: `${file.path}/.gitkeep`,
+      content: '',
+    };
+  }
+
   static formmat_actions(files, action_formmater, options) {
     let actions;
     if (files instanceof Array) {
@@ -92,6 +100,13 @@ class CommitFormatter {
     options.commit_message = options.commit_message || default_message;
     return this.output(actions, project_id, options);
   }
+
+  static create_folder(folder, project_id, options) {
+    const actions = this.formmat_actions(folder, this.formmat_create_folder_action, options);
+    options.commit_message =
+    `${options.author} create folder ${folder.path}`;
+    return this.output(actions, project_id, options);
+  }
 }
 
 module.exports = app => {
@@ -116,36 +131,45 @@ module.exports = app => {
 
   const statics = CommitSchema.statics;
 
-  statics.create_file = async function(files, project_id, options) {
+  statics.create_file = function(files, project_id, options) {
     const commit = CommitFormatter.create_file(files, project_id, options);
-    return await this.create(commit)
+    return this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
         throw err;
       });
   };
 
-  statics.update_file = async function(files, project_id, options) {
+  statics.update_file = function(files, project_id, options) {
     const commit = CommitFormatter.update_file(files, project_id, options);
-    return await this.create(commit)
+    return this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
         throw err;
       });
   };
 
-  statics.delete_file = async function(files, project_id, options) {
+  statics.delete_file = function(files, project_id, options) {
     const commit = CommitFormatter.delete_file(files, project_id, options);
-    return await this.create(commit)
+    return this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
         throw err;
       });
   };
 
-  statics.move_file = async function(files, project_id, options) {
+  statics.move_file = function(files, project_id, options) {
     const commit = CommitFormatter.move_file(files, project_id, options);
-    return await this.create(commit)
+    return this.create(commit)
+      .catch(err => {
+        console.log(`failed to create commit ${commit}`);
+        throw err;
+      });
+  };
+
+  statics.create_folder = function(folder, project_id, options) {
+    const commit = CommitFormatter.create_folder(folder, project_id, options);
+    return this.create(commit)
       .catch(err => {
         console.log(`failed to create commit ${commit}`);
         throw err;
