@@ -1,12 +1,14 @@
 'use strict';
 
+const { empty } = require('../helper');
+
 module.exports = {
   async ensurePermission(site_id, type) {
     let errMsg;
-    if (!this.state) {
-      errMsg = 'No valid authorization token was found';
-    } else if (!this.state.user) {
-      errMsg = 'No valid authorization token was found';
+    this.state = this.state || {};
+
+    if (empty(this.state.user)) {
+      errMsg = 'The resource is protected.Valid authorization token was required';
     } else if (!this.state.user._id) {
       errMsg = 'Invalid token';
     } else {

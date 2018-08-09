@@ -1,12 +1,6 @@
 'use strict';
 
-const assert = require('assert');
-const { empty } = require('../helper');
-
-const generate_redis_key = kw_username => {
-  assert(kw_username);
-  return `accounts-kw_username:${kw_username}`;
-};
+const { empty, generate_account_key } = require('../helper');
 
 module.exports = app => {
   const redis = app.redis;
@@ -23,7 +17,7 @@ module.exports = app => {
   const statics = AccountSchema.statics;
 
   statics.cache = async function(account) {
-    const key = generate_redis_key(account.kw_username);
+    const key = generate_account_key(account.kw_username);
     const serilize_account = JSON.stringify(account);
     await redis.set(key, serilize_account)
       .catch(err => {
@@ -33,7 +27,7 @@ module.exports = app => {
   };
 
   statics.release_cache_by_kw_username = async function(kw_username) {
-    const key = generate_redis_key(kw_username);
+    const key = generate_account_key(kw_username);
     await redis.del(key)
       .catch(err => {
         logger.error(`fail to release cache of account ${key}`);
@@ -42,7 +36,7 @@ module.exports = app => {
   };
 
   statics.load_cache_by_kw_username = async function(kw_username) {
-    const key = generate_redis_key(kw_username);
+    const key = generate_account_key(kw_username);
     const account = await redis.get(key)
       .catch(err => {
         logger.error(err);

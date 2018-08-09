@@ -1,17 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const { empty } = require('../helper');
-
-const generate_file_key = path => {
-  assert(path);
-  return `file:${path}`;
-};
-
-const generate_tree_key = path => {
-  assert(path);
-  return `tree:${path}`;
-};
+const { empty, generate_file_key, generate_tree_key } = require('../helper');
 
 const serilize_file = file => JSON.stringify({
   path: file.path,

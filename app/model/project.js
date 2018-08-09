@@ -1,12 +1,6 @@
 'use strict';
 
-const assert = require('assert');
-const { empty } = require('../helper');
-
-const generate_redis_key = path => {
-  assert(path);
-  return `project:${path}`;
-};
+const { empty, generate_project_key, generate_tree_key } = require('../helper');
 
 module.exports = app => {
   const redis = app.redis;
@@ -27,7 +21,7 @@ module.exports = app => {
   const statics = ProjectSchema.statics;
 
   statics.cache = async function(project) {
-    const key = generate_redis_key(project.path);
+    const key = generate_project_key(project.path);
     const serilized_project = JSON.stringify(project);
     await redis.set(key, serilized_project)
       .catch(err => {
@@ -36,17 +30,28 @@ module.exports = app => {
       });
   };
 
-  statics.release_cache_by_path = async function(path) {
-    const key = generate_redis_key(path);
-    await redis.del(key)
+  statics.release_cache = async function(path, pipeline = redis.pipeline()) {
+    this.release_content_cache(path, pipeline);
+    this.release_tree_cache(path, pipeline);
+    await pipeline.exec()
       .catch(err => {
-        logger.error(`fail to release cache of project ${key}`);
+        logger.error(`fail to release cache of project ${path}`);
         logger.error(err);
       });
   };
 
+  statics.release_content_cache = async function(path, pipeline = redis.pipeline()) {
+    const key = generate_project_key(path);
+    pipeline.del(key);
+  };
+
+  statics.release_tree_cache = function(path, pipeline = redis.pipeline()) {
+    const key = generate_tree_key(path);
+    pipeline.del(key);
+  };
+
   statics.load_cache_by_path = async function(path) {
-    const key = generate_redis_key(path);
+    const key = generate_project_key(path);
     const project = await redis.get(key)
       .catch(err => {
         logger.error(err);
@@ -76,8 +81,8 @@ module.exports = app => {
     return this.get_by_path(path, false);
   };
 
-  statics.delete_and_release_cache_by_path = async function(path) {
-    await this.release_cache_by_path(path);
+  statics.delete_and_release_cache = async function(path) {
+    await this.release_cache(path);
     await this.deleteMany({ path })
       .catch(err => {
         throw err;

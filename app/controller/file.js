@@ -42,6 +42,7 @@ const move_rule = {
 
 class FileController extends Controller {
   async show() {
+    await this.get_readable_project();
     const path = this.ctx.params.path;
     const from_cache = !this.ctx.query.refresh_cache;
     let file = await this.ctx.model.File
@@ -56,7 +57,7 @@ class FileController extends Controller {
     }
 
     this.throw_if_not_exist(file);
-    this.ctx.body = { content: file.content };
+    this.ctx.body = { content: file.content || '' };
   }
 
   async create() {

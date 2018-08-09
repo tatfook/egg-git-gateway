@@ -97,7 +97,7 @@ class ProjectController extends Controller {
       });
 
     await this.ctx.model.Project
-      .delete_and_release_cache_by_path(project.path)
+      .delete_and_release_cache(project.path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
