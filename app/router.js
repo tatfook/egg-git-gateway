@@ -12,11 +12,11 @@ module.exports = app => {
   router.resources('home', '/', controller.home);
 
   router.post('/accounts', controller.account.create);
-  router.del('/accounts/:kw_username', controller.account.destroy);
+  router.del('/accounts/:kw_username', controller.account.remove);
 
   router.post('/projects/user/:kw_username', controller.project.create);
   router.put('/projects/:path/visibility', controller.project.update_visibility);
-  router.del('/projects/:path', controller.project.destroy);
+  router.del('/projects/:path', controller.project.remove);
 
   router.get('/tree/:path', controller.tree.show);
 
@@ -27,4 +27,5 @@ module.exports = app => {
   router.put('/files/:path/move', app.jwt, controller.file.move);
 
   router.post('/folders/:path', app.jwt, controller.folder.create);
+  router.del('/folders/:path', app.jwt, controller.folder.remove);
 };

@@ -61,6 +61,7 @@ class FileController extends Controller {
 
   async create() {
     this.ctx.validate(create_rule);
+    this.validate_file_path();
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     await this.throw_if_parent_node_not_exist();
@@ -145,7 +146,7 @@ class FileController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    await this.throw_if_not_exist(file);
+    this.throw_if_not_exist(file);
 
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
@@ -171,6 +172,7 @@ class FileController extends Controller {
 
   async move() {
     this.ctx.validate(move_rule);
+    this.validate_file_path();
     const project = await this.get_writable_project();
     await this.throw_if_can_not_move();
     const file = await this.ctx.model.File

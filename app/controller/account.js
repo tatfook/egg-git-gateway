@@ -36,7 +36,7 @@ class AccountController extends Controller {
     this.ctx.status = 201;
   }
 
-  async destroy() {
+  async remove() {
     const account = await this.ctx.model.Account
       .findOne({
         kw_username: this.ctx.params.kw_username,

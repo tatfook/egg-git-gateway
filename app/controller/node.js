@@ -3,6 +3,11 @@
 const Controller = require('egg').Controller;
 const { empty } = require('../helper');
 
+const file_type = {
+  tree: 'Folder',
+  blob: 'File',
+};
+
 class NodeController extends Controller {
   async dump() {
     const file = await this.load_from_gitlab(this.ctx.params.path, false);
@@ -55,7 +60,7 @@ class NodeController extends Controller {
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {
-          this.throw_if_not_exist();
+          this.throw_if_not_exist(null);
         }
         this.ctx.throw(500);
       });
@@ -71,10 +76,16 @@ class NodeController extends Controller {
     return file;
   }
 
-  throw_if_not_exist(file) {
-    const errMsg = 'File or folder not found';
+  validate_file_path(path) {
+    path = path || this.ctx.params.path;
+    const pattern = /\.[^\.]+$/;
+    if (!pattern.test(path)) { this.ctx.throw(400, 'Path of the file must end with .xxx'); }
+  }
+
+  throw_if_not_exist(file, type = 'blob') {
+    const errMsg = `${file_type[type]} not found`;
     if (empty(file)) { this.ctx.throw(404, errMsg); }
-    if (file.type === 'tree') { this.ctx.throw(404, errMsg); }
+    if (file.type !== type) { this.ctx.throw(404, errMsg); }
   }
 
   throw_if_exists(file) {
@@ -134,7 +145,9 @@ class NodeController extends Controller {
   async get_readable_project(project_path) {
     const project = await this.get_project(project_path);
     const white_list = this.config.file.white_list;
-    if (white_list.includes(project.sitename)) {
+    const must_ensure = (!(white_list.includes(project.sitename)))
+      && (project.visibility === 'private');
+    if (must_ensure) {
       await this.ctx.ensurePermission(project.site_id, 'r');
     }
     return project;

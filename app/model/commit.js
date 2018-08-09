@@ -30,9 +30,11 @@ class CommitFormatter {
   }
 
   static formmat_delete_action(file) {
+    let file_path = file.path;
+    if (file.type === 'tree') { file_path = `${file_path}/${file.name}`; }
     return {
       action: 'delete',
-      file_path: file.path,
+      file_path,
     };
   }
 
@@ -51,7 +53,7 @@ class CommitFormatter {
   static formmat_create_folder_action(file) {
     return {
       action: 'create',
-      file_path: `${file.path}/.gitkeep`,
+      file_path: `${file.path}/${file.name}`,
       content: '',
     };
   }
@@ -103,8 +105,8 @@ class CommitFormatter {
 
   static create_folder(folder, project_id, options) {
     const actions = this.formmat_actions(folder, this.formmat_create_folder_action, options);
-    options.commit_message =
-    `${options.author} create folder ${folder.path}`;
+    options.commit_message = options.commit_message ||
+      `${options.author} create folder ${folder.path}`;
     return this.output(actions, project_id, options);
   }
 }

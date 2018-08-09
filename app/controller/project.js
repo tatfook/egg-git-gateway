@@ -74,13 +74,20 @@ class ProjectController extends Controller {
     };
   }
 
-  async destroy() {
+  async remove() {
     const project = await this.ctx.model.Project
       .get_by_path(
         this.ctx.params.path,
         false
       );
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
+
+    await this.ctx.model.File
+      .delete_sub_files_and_release_cache(project.path, null, false)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
 
     await this.service.gitlab
       .delete_project(project._id)

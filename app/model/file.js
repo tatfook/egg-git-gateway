@@ -101,7 +101,7 @@ module.exports = app => {
   statics.release_cache = function(file, pipeline = redis.pipeline()) {
     this.release_content_cache(file, pipeline);
     this.release_node_cache(file, pipeline);
-    if (file.type === 'tree') { this.release_tree_cache(file, pipeline); }
+    if (file.type === 'tree') { this.release_tree_cache(file.path, pipeline); }
     return pipeline;
   };
 
@@ -134,6 +134,7 @@ module.exports = app => {
   statics.cache_tree = function(path, tree, pipeline = redis.pipeline()) {
     const key = generate_tree_key(path);
     pipeline.hmset(key, serilize_tree(tree));
+    return pipeline;
   };
 
   statics.cache_tree_if_exists = async function(path, tree, pipeline = redis.pipeline()) {
@@ -151,16 +152,26 @@ module.exports = app => {
     return deserialize_tree(serilized_tree);
   };
 
-  // todo: release recursive
-  statics.release_tree_cache = function(file, pipeline = redis.pipeline()) {
-    const key = generate_tree_key(file.path);
+  statics.release_tree_cache = function(path, pipeline = redis.pipeline()) {
+    const key = generate_tree_key(path);
     pipeline.del(key);
+    return pipeline;
   };
 
   statics.release_node_cache = function(file, pipeline = redis.pipeline()) {
     const tree_path = this.get_tree_path(file.path);
     const key = generate_tree_key(tree_path);
     pipeline.hdel(key, file.path);
+  };
+
+  statics.release_sub_files_cache = async function(sub_files, pipeline = redis.pipeline()) {
+    const keys_to_release = [];
+    for (const file of sub_files) {
+      keys_to_release.push(generate_file_key(file.path));
+      if (file.type === 'tree') { keys_to_release.push(generate_tree_key(file.path)); }
+    }
+    pipeline.del(keys_to_release);
+    return pipeline;
   };
 
   statics.get_by_path_from_db = async function(path) {
@@ -221,7 +232,14 @@ module.exports = app => {
       .skip(pagination.skip)
       .limit(pagination.limit)
       .catch(err => { logger.error(err); });
-    if (tree.length > 0 && !recursive) { await this.cache_tree(path, tree); }
+    if (tree.length > 0 && !recursive) {
+      const pipeline = this.cache_tree(path, tree);
+      await pipeline.exec()
+        .catch(err => {
+          logger.error(`failed cache tree ${path}`);
+          throw err;
+        });
+    }
     return tree;
   };
 
@@ -248,6 +266,62 @@ module.exports = app => {
     if (empty(parent)) {
       const errMsg = `Parent folder ${parent_path} not found`;
       return errMsg;
+    }
+  };
+
+  statics.get_sub_files_by_path = async function(tree_path, pattern, get_self = true) {
+    if (!pattern) { pattern = new RegExp(`^${tree_path}/.*`, 'u'); }
+    const sub_files = await this.find({ path: pattern })
+      .limit(999999)
+      .catch(err => {
+        logger.error(err);
+        throw err;
+      });
+
+    if (get_self) {
+      const folder = await this.findOne({ path: tree_path })
+        .catch(err => {
+          logger.error(err);
+          throw err;
+        });
+      sub_files.push(folder);
+    }
+    return sub_files;
+  };
+
+  statics.delete_sub_files_and_release_cache =
+  async function(tree_path, sub_files, remove_self = true) {
+    const pattern = new RegExp(`^${tree_path}/.*`, 'u');
+    if (!sub_files) {
+      sub_files = await this.get_sub_files_by_path(tree_path, pattern, remove_self)
+        .catch(err => {
+          logger.error(err);
+          throw err;
+        });
+    }
+
+    const pipeline = await this.release_sub_files_cache(sub_files);
+    await pipeline.exec()
+      .catch(err => {
+        logger.error(err);
+        throw err;
+      });
+
+    await this.deleteMany({ path: pattern })
+      .catch(err => {
+        logger.error(err);
+        throw err;
+      });
+
+    if (remove_self) {
+      const folder = sub_files[sub_files.length - 1];
+      if (!empty(folder)) {
+        await folder.remove()
+          .catch(err => {
+            this.ctx.logger.error(err);
+            this.ctx.throw(500);
+          });
+      }
     }
   };
 
