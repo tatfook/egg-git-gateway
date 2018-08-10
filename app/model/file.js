@@ -46,6 +46,8 @@ module.exports = app => {
     path: { type: String, unique: true },
     content: String,
     type: { type: String, default: 'blob' },
+    project_id: Number,
+    account_id: Number,
   }, { timestamps: true });
 
   const statics = FileSchema.statics;
@@ -154,9 +156,9 @@ module.exports = app => {
     pipeline.hdel(key, file.path);
   };
 
-  statics.release_sub_files_cache = async function(sub_files, pipeline = redis.pipeline()) {
+  statics.release_multi_files_cache = async function(files, pipeline = redis.pipeline()) {
     const keys_to_release = [];
-    for (const file of sub_files) {
+    for (const file of files) {
       keys_to_release.push(generate_file_key(file.path));
       if (file.type === 'tree') { keys_to_release.push(generate_tree_key(file.path)); }
     }
@@ -290,7 +292,9 @@ module.exports = app => {
         });
     }
 
-    const pipeline = await this.release_sub_files_cache(sub_files);
+    if (empty(sub_files)) { return; }
+
+    const pipeline = await this.release_multi_files_cache(sub_files);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);
@@ -313,6 +317,32 @@ module.exports = app => {
           });
       }
     }
+  };
+
+  statics.delete_and_release_by_query = async function(query) {
+    const files = await this.find(query).limit(99999999);
+    if (empty(files)) { return; }
+    const pipeline = await this.release_multi_files_cache(files);
+    await pipeline.exec();
+    await this.deleteMany(query);
+  };
+
+  statics.delete_project = async function(project_id) {
+    assert(project_id);
+    await this.delete_and_release_by_query({ project_id })
+      .catch(err => {
+        logger.error(err);
+        throw err;
+      });
+  };
+
+  statics.delete_account = async function(account_id) {
+    assert(account_id);
+    await this.delete_and_release_by_query({ account_id })
+      .catch(err => {
+        logger.error(err);
+        throw err;
+      });
   };
 
   FileSchema.post('save', async function(file) {

@@ -47,6 +47,21 @@ class AccountController extends Controller {
     if (!account) {
       this.ctx.throw(404, 'User Not Found');
     }
+
+    await this.ctx.model.File
+      .delete_account(account._id)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await this.ctx.model.Project
+      .delete_account(account._id)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
     await this.service.gitlab
       .delete_account(account._id)
       .catch(err => {
@@ -57,7 +72,7 @@ class AccountController extends Controller {
       .delete_and_release_cache_by_kw_username(account.kw_username)
       .catch(err => {
         this.ctx.logger.error(err);
-        throw err;
+        this.ctx.throw(500);
       });
     this.ctx.status = 204;
   }

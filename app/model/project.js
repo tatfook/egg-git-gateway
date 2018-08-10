@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const { empty, generate_project_key, generate_tree_key } = require('../helper');
 
 module.exports = app => {
@@ -16,6 +17,7 @@ module.exports = app => {
     sitename: String,
     path: { type: String, unique: true },
     git_path: String,
+    account_id: Number,
   }, { timestamps: true });
 
   const statics = ProjectSchema.statics;
@@ -83,8 +85,35 @@ module.exports = app => {
 
   statics.delete_and_release_cache = async function(path) {
     await this.release_cache(path);
-    await this.deleteMany({ path })
+    await this.deleteOne({ path })
       .catch(err => {
+        throw err;
+      });
+  };
+
+  statics.release_multi_projects_cache = async function(projects, pipeline = redis.pipeline()) {
+    const keys_to_release = [];
+    for (const project of projects) {
+      keys_to_release.push(generate_project_key(project.path));
+      keys_to_release.push(generate_tree_key(project.path));
+    }
+    pipeline.del(keys_to_release);
+    return pipeline;
+  };
+
+  statics.delete_and_release_by_query = async function(query) {
+    const projects = await this.find(query).limit(99999999);
+    if (empty(projects)) { return; }
+    const pipeline = await this.release_multi_projects_cache(projects);
+    await pipeline.exec();
+    await this.deleteMany(query);
+  };
+
+  statics.delete_account = async function(account_id) {
+    assert(account_id);
+    await this.delete_and_release_by_query({ account_id })
+      .catch(err => {
+        logger.error(err);
         throw err;
       });
   };

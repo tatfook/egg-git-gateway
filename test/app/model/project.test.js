@@ -16,6 +16,7 @@ describe('test/app/model/project.test.js', () => {
     name: 'keepworktest1',
     path: 'testuser/test1',
     git_path: 'gitlab_www_testuser/keepworktest1',
+    account_id: 123,
   };
 
   it('should cache after created', async () => {
@@ -31,6 +32,7 @@ describe('test/app/model/project.test.js', () => {
     assert(cached_data.sitename === project.sitename);
     assert(cached_data.path === project.path);
     assert(cached_data.git_path === project.git_path);
+    assert(cached_data.account_id === project.account_id);
   });
 
   it('should cache after updated', async () => {
@@ -46,7 +48,7 @@ describe('test/app/model/project.test.js', () => {
   it('should release the cache after deleted', async () => {
     const ctx = app.mockContext();
     const ProjectModel = ctx.model.Project;
-    await ProjectModel.delete_and_release_cache_by_path(project.path);
+    await ProjectModel.delete_and_release_cache(project.path);
 
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
     assert(!cached_data);

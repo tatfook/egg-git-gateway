@@ -9,11 +9,6 @@ const file_type = {
 };
 
 class NodeController extends Controller {
-  async dump() {
-    const file = await this.load_from_gitlab(this.ctx.params.path, false);
-    this.ctx.body = { content: file.content };
-  }
-
   async send_message(commit_id, project_id) {
     await this.service.kafka
       .send_commit_message(commit_id, project_id)
@@ -42,37 +37,6 @@ class NodeController extends Controller {
       };
     }
     file.type = 'blob';
-    return file;
-  }
-
-  async load_from_gitlab() {
-    const project_path = this.get_project_path();
-    const project = await this.ctx.model.Project
-      .get_by_path(project_path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
-
-    let file = await this.service.gitlab
-      .load_file(project._id, this.ctx.params.path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        if (err.response.status === 404) {
-          this.throw_if_not_exist(null);
-        }
-        this.ctx.throw(500);
-      });
-    this.throw_if_not_exist(file);
-
-    file.path = this.ctx.params.path;
-    file = this.filter_file_or_folder(file);
-    await this.ctx.model.File.create(file)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
     return file;
   }
 

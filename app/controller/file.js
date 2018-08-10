@@ -42,7 +42,7 @@ const move_rule = {
 
 class FileController extends Controller {
   async show() {
-    await this.get_readable_project();
+    const project = await this.get_readable_project();
     const path = this.ctx.params.path;
     const from_cache = !this.ctx.query.refresh_cache;
     let file = await this.ctx.model.File
@@ -53,7 +53,7 @@ class FileController extends Controller {
       });
 
     if (empty(file)) {
-      file = await this.load_from_gitlab();
+      file = await this.load_from_gitlab(project);
     }
 
     this.throw_if_not_exist(file);
@@ -79,6 +79,8 @@ class FileController extends Controller {
       name: this.get_file_name(),
       content: this.ctx.request.body.content,
       path,
+      project_id: project._id,
+      account_id: project.account_id,
     });
 
     const commit_options = {
@@ -210,6 +212,46 @@ class FileController extends Controller {
 
     await this.send_message(commit._id, project._id);
     this.ctx.status = 204;
+  }
+
+  async dump() {
+    const file = await this.load_from_gitlab();
+    this.ctx.body = { content: file.content };
+  }
+
+  async load_from_gitlab(project) {
+    if (!project) {
+      const project_path = this.get_project_path();
+      project = await this.ctx.model.Project
+        .get_by_path(project_path)
+        .catch(err => {
+          this.ctx.logger.error(err);
+          this.ctx.throw(500);
+        });
+    }
+    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
+
+    let file = await this.service.gitlab
+      .load_file(project._id, this.ctx.params.path)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        if (err.response.status === 404) {
+          this.throw_if_not_exist(null);
+        }
+        this.ctx.throw(500);
+      });
+    this.throw_if_not_exist(file);
+
+    file.path = this.ctx.params.path;
+    file = this.filter_file_or_folder(file);
+    file.project_id = project._id;
+    file.account_id = project.account_id;
+    await this.ctx.model.File.create(file)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    return file;
   }
 }
 
