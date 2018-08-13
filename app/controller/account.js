@@ -12,6 +12,7 @@ const create_rule = {
 
 class AccountController extends Controller {
   async create() {
+    this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
     const account_prifix = this.config.gitlab.account_prifix;
     const email_postfix = this.config.gitlab.email_postfix;
@@ -37,6 +38,7 @@ class AccountController extends Controller {
   }
 
   async remove() {
+    this.ctx.ensureAdmin();
     const account = await this.ctx.model.Account
       .findOne({
         kw_username: this.ctx.params.kw_username,

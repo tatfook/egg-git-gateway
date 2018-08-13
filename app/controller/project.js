@@ -16,6 +16,7 @@ const update_visibility_rule = {
 
 class ProjectController extends Controller {
   async create() {
+    this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
     const account = await this.ctx.model.Account
       .get_by_kw_username(this.ctx.params.kw_username)
@@ -50,6 +51,7 @@ class ProjectController extends Controller {
   }
 
   async update_visibility() {
+    this.ctx.ensureAdmin();
     this.ctx.validate(update_visibility_rule);
     const project = await this.ctx.model.Project
       .get_by_path_from_db(this.ctx.params.path);
@@ -75,6 +77,7 @@ class ProjectController extends Controller {
   }
 
   async remove() {
+    this.ctx.ensureAdmin();
     const project = await this.ctx.model.Project
       .get_by_path(
         this.ctx.params.path,

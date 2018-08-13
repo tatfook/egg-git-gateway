@@ -10,8 +10,9 @@ const file_type = {
 
 class NodeController extends Controller {
   async send_message(commit_id, project_id) {
-    await this.service.kafka
-      .send_commit_message(commit_id, project_id)
+    const commit_message = this.service.kafka.wrap_commit_message(commit_id, project_id);
+    const payloads = [ commit_message ];
+    await this.service.kafka.send(payloads)
       .catch(err => {
         this.ctx.logger.error(err);
       });

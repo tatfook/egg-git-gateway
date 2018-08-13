@@ -9,7 +9,9 @@ module.exports = app => {
   const url_prefix = app.config.url_prefix;
   if (url_prefix) { router.prefix(url_prefix); }
 
-  router.resources('home', '/', controller.home);
+  router.use(app.jwt);
+
+  router.get('home', '/', controller.home.index);
 
   router.post('/accounts', controller.account.create);
   router.del('/accounts/:kw_username', controller.account.remove);
@@ -20,12 +22,12 @@ module.exports = app => {
 
   router.get('/tree/:path', controller.tree.show);
 
-  router.get('/files/:path', app.jwt, controller.file.show);
-  router.post('/files/:path', app.jwt, controller.file.create);
-  router.put('/files/:path', app.jwt, controller.file.update);
-  router.del('/files/:path', app.jwt, controller.file.remove);
-  router.put('/files/:path/move', app.jwt, controller.file.move);
+  router.get('/files/:path', controller.file.show);
+  router.post('/files/:path', controller.file.create);
+  router.put('/files/:path', controller.file.update);
+  router.del('/files/:path', controller.file.remove);
+  router.put('/files/:path/move', controller.file.move);
 
-  router.post('/folders/:path', app.jwt, controller.folder.create);
-  router.del('/folders/:path', app.jwt, controller.folder.remove);
+  router.post('/folders/:path', controller.folder.create);
+  router.del('/folders/:path', controller.folder.remove);
 };

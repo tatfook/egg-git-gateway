@@ -25,22 +25,25 @@ class KafkaService extends Service {
       promisified_send = promisify(Producer.send.bind(Producer));
     }
     if (!(payloads instanceof Array)) { payloads = [ payloads ]; }
-    return promisified_send(payloads);
-  }
-
-  send_commit_message(commit_id, project_id) {
-    const payloads = {
-      topic: this.config.kafka.topics.commit,
-      messages: commit_id,
-      key: project_id,
-    };
-    return this.send(payloads).then(result => {
+    return promisified_send(payloads).then(result => {
       this.app.logger.info(`Successfully sent messages to ${inspect(result)}`);
       return result;
     });
   }
 
-  // send_elasticsearch_message() {}
+  wrap_commit_message(commit_id, project_id) {
+    return {
+      topic: this.config.kafka.topics.commit,
+      messages: commit_id,
+      key: project_id,
+    };
+  }
+
+  wrap_elasticsearch_message() {
+    return {
+      topic: this.config.kafka.topics.elasticsearch,
+    };
+  }
 
   init_client() {
     if (!Client) {
