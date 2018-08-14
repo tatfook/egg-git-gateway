@@ -100,7 +100,12 @@ class FileController extends Controller {
       this.ctx.throw(500);
     });
 
-    await this.send_message(commit._id, project._id);
+    const es_message = {
+      action: 'create_file',
+      path: file.path,
+    };
+
+    await this.send_message(commit._id, project._id, es_message);
     this.ctx.status = 201;
   }
 
@@ -136,7 +141,12 @@ class FileController extends Controller {
       this.ctx.throw(500);
     });
 
-    await this.send_message(commit._id, project._id);
+    const es_message = {
+      action: 'update_file',
+      path: file.path,
+    };
+
+    await this.send_message(commit._id, project._id, es_message);
     this.ctx.status = 204;
   }
 
@@ -169,7 +179,12 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    await this.send_message(commit._id, project._id);
+    const es_message = {
+      action: 'remove_file',
+      path: file.path,
+    };
+
+    await this.send_message(commit._id, project._id, es_message);
     this.ctx.status = 204;
   }
 
@@ -210,7 +225,13 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    await this.send_message(commit._id, project._id);
+    const es_message = {
+      action: 'move_file',
+      path: file.path,
+      previous_path: file.previous_path,
+    };
+
+    await this.send_message(commit._id, project._id, es_message);
     this.ctx.status = 204;
   }
 

@@ -150,7 +150,7 @@ class GitlabService extends Service {
   serialized_loaded_file(res_data) {
     return {
       name: res_data.file_name,
-      content: new Buffer.from(res_data.content, res_data.encoding).toString(),
+      content: Buffer.from(res_data.content, res_data.encoding).toString(),
       blob_id: res_data.blob_id,
       commit_id: res_data.commit_id,
       last_commit_id: res_data.last_commit_id,

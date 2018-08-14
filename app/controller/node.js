@@ -9,9 +9,15 @@ const file_type = {
 };
 
 class NodeController extends Controller {
-  async send_message(commit_id, project_id) {
-    const commit_message = this.service.kafka.wrap_commit_message(commit_id, project_id);
-    const payloads = [ commit_message ];
+  async send_message(commit_id, project_id, es_message) {
+    const wrapped_commit_message = this.service.kafka
+      .wrap_commit_message(commit_id, project_id);
+    const payloads = [ wrapped_commit_message ];
+    if (es_message) {
+      const wrapped_es_message = this.service.kafka
+        .wrap_elasticsearch_message(es_message, project_id);
+      payloads.push(wrapped_es_message);
+    }
     await this.service.kafka.send(payloads)
       .catch(err => {
         this.ctx.logger.error(err);

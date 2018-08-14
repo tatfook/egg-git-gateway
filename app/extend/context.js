@@ -2,6 +2,10 @@
 
 const { empty } = require('../helper');
 
+const isAdmin = user => {
+  return user.roleId === 10;
+};
+
 module.exports = {
   async ensurePermission(site_id, type) {
     let errMsg;
@@ -26,8 +30,7 @@ module.exports = {
     const errMsg = 'Page not found';
     this.state = this.state || {};
     this.state.user = this.state.user || {};
-    console.log(this.state.user);
-    const not_permitted = empty(this.state.user) || this.state.user.roleId !== 10;
+    const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
     if (not_permitted) { this.throw(404, errMsg); }
     this.user = this.state.user;
   },

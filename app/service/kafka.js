@@ -3,6 +3,7 @@
 const Service = require('egg').Service;
 const { KafkaClient, HighLevelProducer } = require('kafka-node');
 const { promisify, inspect } = require('util');
+const assert = require('assert');
 
 let Client;
 let Producer;
@@ -39,9 +40,13 @@ class KafkaService extends Service {
     };
   }
 
-  wrap_elasticsearch_message() {
+  wrap_elasticsearch_message(message, project_id) {
+    assert(message.action);
+    assert(message.path);
     return {
       topic: this.config.kafka.topics.elasticsearch,
+      messages: JSON.stringify(message),
+      key: project_id,
     };
   }
 
