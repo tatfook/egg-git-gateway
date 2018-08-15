@@ -6,7 +6,6 @@ const { empty } = require('../helper');
 const create_rule = {
   sitename: 'string',
   site_id: { type: 'int', required: false },
-  hook_url: 'url',
   visibility: [ 'public', 'private' ],
 };
 
@@ -30,7 +29,6 @@ class ProjectController extends Controller {
       .create_project({
         name: this.ctx.request.body.sitename,
         visibility: this.ctx.request.body.visibility,
-        hook_url: this.ctx.request.body.hook_url,
         account_id: account._id,
       }).catch(err => {
         this.ctx.logger.error(err);

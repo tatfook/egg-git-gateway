@@ -106,7 +106,6 @@ class GitlabService extends Service {
   async create_project(project) {
     assert(project.name);
     assert(project.account_id);
-    assert(project.hook_url);
 
     let serialized_project = this.serialize_new_project(project);
     const res = await this.client
@@ -117,8 +116,6 @@ class GitlabService extends Service {
         throw err;
       });
     serialized_project = this.serialize_loaded_project(res.data);
-    const hook_setting = this.serialize_hook_setting(project);
-    await this.set_project_hooks(serialized_project._id, hook_setting);
     return serialized_project;
   }
 
