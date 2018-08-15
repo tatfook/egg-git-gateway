@@ -70,6 +70,13 @@ class ProjectController extends Controller {
       this.ctx.throw(500);
     });
 
+    const es_message = {
+      action: 'update_site_visibility',
+      path: project.path,
+      visibility: project.visibility,
+    };
+    await this.send_message(project._id, es_message);
+
     this.ctx.body = {
       site_id: project.site_id,
       visibility: project.visibility,
@@ -105,7 +112,23 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
+
+    const es_message = {
+      action: 'remove_site',
+      path: project.path,
+    };
+    await this.send_message(project._id, es_message);
+
     this.ctx.status = 204;
+  }
+
+  async send_message(project_id, es_message) {
+    const wrapped_es_message = this.service.kafka
+      .wrap_elasticsearch_message(es_message, project_id);
+    await this.service.kafka.send(wrapped_es_message)
+      .catch(err => {
+        this.ctx.logger.error(err);
+      });
   }
 }
 

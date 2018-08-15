@@ -42,7 +42,6 @@ class KafkaService extends Service {
 
   wrap_elasticsearch_message(message, project_id) {
     assert(message.action);
-    assert(message.path);
     return {
       topic: this.config.kafka.topics.elasticsearch,
       messages: JSON.stringify(message),
