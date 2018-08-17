@@ -103,6 +103,18 @@ class GitlabService extends Service {
       });
   }
 
+  async set_admin(project_id) {
+    const options = {
+      user_id: 1,
+      access_level: 40,
+    };
+    await this.client.post(`/projects/${project_id}/members`, options)
+      .catch(err => {
+        this.app.logger.error(err);
+        throw err;
+      });
+  }
+
   async create_project(project) {
     assert(project.name);
     assert(project.account_id);
@@ -116,6 +128,7 @@ class GitlabService extends Service {
         throw err;
       });
     serialized_project = this.serialize_loaded_project(res.data);
+    await this.set_admin(serialized_project._id);
     return serialized_project;
   }
 

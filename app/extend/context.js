@@ -13,7 +13,7 @@ module.exports = {
 
     if (empty(this.state.user)) {
       errMsg = 'The resource is protected.Valid authorization token was required';
-    } else if (!this.state.user._id) {
+    } else if (!this.state.user._id || !this.state.user.username) {
       errMsg = 'Invalid token';
     } else {
       const permitted = await this.service.keepwork.ensurePermission(
