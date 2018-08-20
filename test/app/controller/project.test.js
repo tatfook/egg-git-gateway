@@ -12,7 +12,7 @@ describe('test/app/controller/project.test.js', () => {
 
   const admin = {
     username: 'unittest',
-    _id: 15,
+    userId: 15,
     roleId: 10,
   };
 
@@ -47,6 +47,6 @@ describe('test/app/controller/project.test.js', () => {
     return app.httpRequest()
       .del(`/projects/${path}`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(204);
+      .expect(200);
   });
 });

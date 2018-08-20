@@ -51,7 +51,7 @@ class FolderController extends Controller {
     });
 
     await this.send_message(commit._id, project._id);
-    this.ctx.status = 201;
+    this.created();
   }
 
   async remove() {
@@ -94,7 +94,7 @@ class FolderController extends Controller {
       });
 
     await this.send_message(commit._id, project._id);
-    this.ctx.status = 204;
+    this.deleted();
   }
 
   async rename() { return ''; }

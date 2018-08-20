@@ -106,7 +106,7 @@ class FileController extends Controller {
     };
 
     await this.send_message(commit._id, project._id, es_message);
-    this.ctx.status = 201;
+    this.created();
   }
 
   async update() {
@@ -147,7 +147,7 @@ class FileController extends Controller {
     };
 
     await this.send_message(commit._id, project._id, es_message);
-    this.ctx.status = 204;
+    this.updated();
   }
 
   async remove() {
@@ -185,7 +185,7 @@ class FileController extends Controller {
     };
 
     await this.send_message(commit._id, project._id, es_message);
-    this.ctx.status = 204;
+    this.deleted();
   }
 
   async move() {
@@ -232,7 +232,7 @@ class FileController extends Controller {
     };
 
     await this.send_message(commit._id, project._id, es_message);
-    this.ctx.status = 204;
+    this.moved();
   }
 
   async dump() {

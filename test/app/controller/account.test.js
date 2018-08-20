@@ -6,7 +6,7 @@ describe('test/app/controller/account.test.js', () => {
 
   const admin = {
     username: 'unittest',
-    _id: 15,
+    userId: 15,
     roleId: 10,
   };
 
@@ -31,6 +31,6 @@ describe('test/app/controller/account.test.js', () => {
     return app.httpRequest()
       .del('/accounts/gitgateway123')
       .set('Authorization', `Bearer ${token}`)
-      .expect(204);
+      .expect(200);
   });
 });

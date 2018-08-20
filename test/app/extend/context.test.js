@@ -15,7 +15,7 @@ describe('test/app/extend/context.test.js', () => {
 
     it('should not throw 401', async () => {
       const ctx = app.mockContext();
-      ctx.state = { user: { _id: 15, username: 'test' } };
+      ctx.state = { user: { userId: 15, username: 'test' } };
       await ctx.ensurePermission(1, 'rw');
     });
   });

@@ -1,6 +1,6 @@
 'use strict';
 
-const Controller = require('egg').Controller;
+const Controller = require('../core/base_controller');
 const { empty } = require('../helper');
 
 const create_rule = {
@@ -45,7 +45,7 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    this.ctx.status = 201;
+    this.created();
   }
 
   async update_visibility() {
@@ -117,7 +117,7 @@ class ProjectController extends Controller {
     };
     await this.send_message(project._id, es_message);
 
-    this.ctx.status = 204;
+    this.deleted();
   }
 
   async send_message(project_id, es_message) {

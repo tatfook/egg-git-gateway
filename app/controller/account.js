@@ -1,6 +1,23 @@
 'use strict';
 
-const Controller = require('egg').Controller;
+/**
+ * @api {post} /accounts create
+ * @apiName CreateAccount
+ * @apiGroup Account
+ * @apiPermission admin
+ *
+ * @apiParam {String} username Username of the user.
+ * @apiParam {String} password Password of the gitlab account
+ */
+
+/**
+ * @api {post} /accounts/:username remove
+ * @apiName RemoveAccount
+ * @apiGroup Account
+ * @apiPermission admin
+ */
+
+const Controller = require('../core/base_controller');
 
 const create_rule = {
   username: 'string',
@@ -34,9 +51,8 @@ class AccountController extends Controller {
       this.ctx.logger.error(err);
       throw err;
     });
-    this.ctx.status = 201;
+    this.created();
   }
-
   async remove() {
     this.ctx.ensureAdmin();
     const account = await this.ctx.model.Account
@@ -83,7 +99,7 @@ class AccountController extends Controller {
     };
     await this.send_message(account._id, es_message);
 
-    this.ctx.status = 204;
+    this.deleted();
   }
 
   async send_message(user_id, es_message) {
