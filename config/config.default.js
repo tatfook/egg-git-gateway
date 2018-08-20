@@ -26,5 +26,10 @@ module.exports = appInfo => {
     dir: path.join(appInfo.baseDir, 'app/doc'),
   };
 
+  config.cors = {
+    origin: '*',
+    allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
+  };
+
   return config;
 };
