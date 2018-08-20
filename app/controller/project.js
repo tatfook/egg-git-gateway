@@ -14,6 +14,18 @@ const update_visibility_rule = {
 };
 
 class ProjectController extends Controller {
+  /**
+ * @api {post} /projects/user/:username create
+ * @apiName CreateProject
+ * @apiGroup Project
+ * @apiDescription To create a git project for a new keepwork website
+ * @apiPermission admin
+ *
+ * @apiParam {String} username Username of the website owner
+ * @apiParam {String} sitename Name of the website
+ * @apiParam {Number} site_id Id of the website in keepwork
+ * @apiParam {String{public, private}} visibility Visibility of the website
+ */
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
@@ -48,6 +60,16 @@ class ProjectController extends Controller {
     this.created();
   }
 
+  /**
+ * @api {put} /projects/:encoded_path/visibility update visibility
+ * @apiName UpdateVisibility
+ * @apiGroup Project
+ * @apiDescription To update the visibility of a project
+ * @apiPermission admin
+ *
+ * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
+ * @apiParam {String{public, private}} visibility Visibility of the website
+ */
   async update_visibility() {
     this.ctx.ensureAdmin();
     this.ctx.validate(update_visibility_rule);
@@ -81,6 +103,15 @@ class ProjectController extends Controller {
     };
   }
 
+  /**
+ * @api {delete} /projects/:encoded_path remove
+ * @apiName RemoveProject
+ * @apiGroup Project
+ * @apiDescription To remove a project
+ * @apiPermission admin
+ *
+ * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
+ */
   async remove() {
     this.ctx.ensureAdmin();
     const project = await this.ctx.model.Project

@@ -1,22 +1,5 @@
 'use strict';
 
-/**
- * @api {post} /accounts create
- * @apiName CreateAccount
- * @apiGroup Account
- * @apiPermission admin
- *
- * @apiParam {String} username Username of the user.
- * @apiParam {String} password Password of the gitlab account
- */
-
-/**
- * @api {post} /accounts/:username remove
- * @apiName RemoveAccount
- * @apiGroup Account
- * @apiPermission admin
- */
-
 const Controller = require('../core/base_controller');
 
 const create_rule = {
@@ -28,6 +11,16 @@ const create_rule = {
 };
 
 class AccountController extends Controller {
+  /**
+ * @api {post} /accounts create
+ * @apiName CreateAccount
+ * @apiGroup Account
+ * @apiDescription To create a git account for a new keepwork user
+ * @apiPermission admin
+ *
+ * @apiParam {String} username Username of the user
+ * @apiParam {String{>8}} password Password of the gitlab account
+ */
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
@@ -53,6 +46,16 @@ class AccountController extends Controller {
     });
     this.created();
   }
+
+  /**
+ * @api {delete} /accounts/:username remove
+ * @apiName RemoveAccount
+ * @apiGroup Account
+ * @apiDescription To removed an account
+ * @apiPermission admin
+ *
+ * @apiParam {String} username Username of the user
+ */
   async remove() {
     this.ctx.ensureAdmin();
     const account = await this.ctx.model.Account
