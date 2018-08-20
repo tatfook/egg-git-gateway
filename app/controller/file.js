@@ -1,7 +1,7 @@
 'use strict';
 
 const Controller = require('./node');
-const { empty } = require('../helper');
+const { empty } = require('../lib/helper');
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },

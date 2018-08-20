@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const { empty, generate_project_key, generate_tree_key } = require('../helper');
+const { empty, generate_project_key, generate_tree_key } = require('../lib/helper');
 
 module.exports = app => {
   const redis = app.redis;

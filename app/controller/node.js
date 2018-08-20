@@ -1,7 +1,7 @@
 'use strict';
 
 const Controller = require('../core/base_controller');
-const { empty } = require('../helper');
+const { empty } = require('../lib/helper');
 
 const file_type = {
   tree: 'Folder',

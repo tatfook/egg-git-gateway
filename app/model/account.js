@@ -1,6 +1,6 @@
 'use strict';
 
-const { empty, generate_account_key } = require('../helper');
+const { empty, generate_account_key } = require('../lib/helper');
 
 module.exports = app => {
   const redis = app.redis;

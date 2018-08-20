@@ -1,7 +1,7 @@
 'use strict';
 
 const Controller = require('../core/base_controller');
-const { paginate } = require('../helper');
+const { paginate } = require('../lib/helper');
 
 class TreeController extends Controller {
   async show() {

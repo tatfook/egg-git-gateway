@@ -1,6 +1,6 @@
 'use strict';
 
-const { empty } = require('../helper');
+const { empty } = require('../lib/helper');
 
 const isAdmin = user => {
   return user.roleId === 10;
