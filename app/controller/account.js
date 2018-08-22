@@ -7,7 +7,7 @@ const create_rule = {
   username: 'string',
   password: {
     type: 'password',
-    min: 8,
+    min: 6,
   },
 };
 
@@ -21,7 +21,7 @@ class AccountController extends Controller {
  *
  * @apiParam {Number} id keepwork user id
  * @apiParam {String} username Username of the user
- * @apiParam {String{>8}} password Password of the gitlab account
+ * @apiParam {String{ > 6 }} password Password of the gitlab account
  */
   async create() {
     this.ctx.ensureAdmin();
@@ -32,7 +32,7 @@ class AccountController extends Controller {
       .create_account({
         username: `${account_prifix}${this.ctx.request.body.username}`,
         name: this.ctx.request.body.username,
-        password: this.ctx.request.body.password,
+        password: `kw${this.ctx.request.body.password}`,
         email: `${this.ctx.request.body.username}${email_postfix}`,
       }).catch(err => {
         this.ctx.logger.error(err);
@@ -41,7 +41,7 @@ class AccountController extends Controller {
     await this.ctx.model.Account.create({
       _id: account._id,
       kw_id: this.ctx.request.body.id,
-      username: account.username,
+      name: account.username,
       kw_username: account.name,
     }).catch(err => {
       this.ctx.logger.error(err);
@@ -50,7 +50,7 @@ class AccountController extends Controller {
 
     const es_message = {
       action: 'create_user',
-      user_id: account.kw_id,
+      user_id: this.ctx.request.body.id,
     };
     await this.send_message(account._id, es_message);
 

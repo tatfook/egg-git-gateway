@@ -23,8 +23,9 @@ class ProjectController extends Controller {
  *
  * @apiParam {String} username Username of the website owner
  * @apiParam {String} sitename Name of the website
- * @apiParam {Number} site_id Id of the website in keepwork
  * @apiParam {String{public, private}} visibility Visibility of the website
+ * @apiParam {Number} [site_id] Id of the website in keepwork.When the
+ * project is bound to a website,it is required.
  */
   async create() {
     this.ctx.ensureAdmin();
@@ -58,11 +59,14 @@ class ProjectController extends Controller {
         this.ctx.throw(500);
       });
 
-    const es_message = {
-      action: 'create_site',
-      site_id: project.site_id,
-    };
-    await this.send_message(project._id, es_message);
+    if (project.site_id) {
+      const es_message = {
+        action: 'create_site',
+        site_id: project.site_id,
+        username: account.username,
+      };
+      await this.send_message(project._id, es_message);
+    }
 
     this.created();
   }
