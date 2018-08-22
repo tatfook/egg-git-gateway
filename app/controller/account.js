@@ -3,6 +3,7 @@
 const Controller = require('../core/base_controller');
 
 const create_rule = {
+  id: 'int',
   username: 'string',
   password: {
     type: 'password',
@@ -18,6 +19,7 @@ class AccountController extends Controller {
  * @apiDescription To create a git account for a new keepwork user
  * @apiPermission admin
  *
+ * @apiParam {Number} id keepwork user id
  * @apiParam {String} username Username of the user
  * @apiParam {String{>8}} password Password of the gitlab account
  */
@@ -38,12 +40,20 @@ class AccountController extends Controller {
       });
     await this.ctx.model.Account.create({
       _id: account._id,
+      kw_id: this.ctx.request.body.id,
       username: account.username,
       kw_username: account.name,
     }).catch(err => {
       this.ctx.logger.error(err);
       throw err;
     });
+
+    const es_message = {
+      action: 'create_user',
+      user_id: account.kw_id,
+    };
+    await this.send_message(account._id, es_message);
+
     this.created();
   }
 
@@ -105,9 +115,9 @@ class AccountController extends Controller {
     this.deleted();
   }
 
-  async send_message(user_id, es_message) {
+  async send_message(account_id, es_message) {
     const wrapped_es_message = this.service.kafka
-      .wrap_elasticsearch_message(es_message, user_id);
+      .wrap_elasticsearch_message(es_message, account_id);
     await this.service.kafka.send(wrapped_es_message)
       .catch(err => {
         this.ctx.logger.error(err);

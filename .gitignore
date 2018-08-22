@@ -12,4 +12,5 @@ run/
 *.un~
 config.local.js
 config.unittest.js
+doc/
 .vscode/

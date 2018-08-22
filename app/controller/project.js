@@ -57,6 +57,13 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
+
+    const es_message = {
+      action: 'create_site',
+      site_id: project.site_id,
+    };
+    await this.send_message(project._id, es_message);
+
     this.created();
   }
 
