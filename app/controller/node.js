@@ -65,7 +65,7 @@ class NodeController extends Controller {
 
   async throw_if_can_not_move() {
     this.throw_if_not_inside_the_same_project();
-    await this.throw_if_file_in_target_file_exist();
+    await this.throw_if_target_file_exist();
     await this.throw_if_parent_node_not_exist();
   }
 
@@ -81,7 +81,7 @@ class NodeController extends Controller {
     }
   }
 
-  async throw_if_file_in_target_file_exist() {
+  async throw_if_target_file_exist() {
     const file_in_target_path = await this.ctx.model.File
       .get_by_path(this.ctx.params.path)
       .catch(err => {

@@ -18,12 +18,12 @@ class ProjectController extends Controller {
  * @api {post} /projects/user/:username create
  * @apiName CreateProject
  * @apiGroup Project
- * @apiDescription To create a git project for a new keepwork website
+ * @apiDescription To create a git project
  * @apiPermission admin
  *
- * @apiParam {String} username Username of the website owner
+ * @apiParam {String} username Username of the project owner
  * @apiParam {String} sitename Name of the website
- * @apiParam {String{public, private}} visibility Visibility of the website
+ * @apiParam {String{public, private}} visibility Visibility of the project
  * @apiParam {Number} [site_id] Id of the website in keepwork.When the
  * project is bound to a website,it is required.
  */
@@ -79,7 +79,7 @@ class ProjectController extends Controller {
  * @apiPermission admin
  *
  * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
- * @apiParam {String{public, private}} visibility Visibility of the website
+ * @apiParam {String="public", "private"} visibility Visibility of the website
  */
   async update_visibility() {
     this.ctx.ensureAdmin();

@@ -28,7 +28,7 @@ const update_rule = {
 };
 
 const move_rule = {
-  previous_path: 'string',
+  new_path: 'string',
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false },
   commit_message: { type: 'string', required: false },
@@ -41,6 +41,16 @@ const move_rule = {
 };
 
 class FileController extends Controller {
+  /**
+  * @api {get} /files/:encoded_path get
+  * @apiName GetFile
+  * @apiGroup File
+  * @apiDescription To get a file
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {Boolean} [refresh_cache=false]  Whether refresh the cache of this file
+  */
   async show() {
     const project = await this.get_readable_project();
     const path = this.ctx.params.path;
@@ -60,6 +70,16 @@ class FileController extends Controller {
     this.ctx.body = { content: file.content || '' };
   }
 
+  /**
+  * @api {post} /files/:encoded_path create
+  * @apiName CreateFile
+  * @apiGroup File
+  * @apiDescription To create a file
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} [content] Content of the file
+  */
   async create() {
     this.ctx.validate(create_rule);
     this.validate_file_path();
@@ -109,6 +129,16 @@ class FileController extends Controller {
     this.created();
   }
 
+  /**
+  * @api {put} /files/:encoded_path update
+  * @apiName UpdateFile
+  * @apiGroup File
+  * @apiDescription To update a file
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} content Content of the file
+  */
   async update() {
     this.ctx.validate(update_rule);
     const path = this.ctx.params.path;
@@ -150,6 +180,15 @@ class FileController extends Controller {
     this.updated();
   }
 
+  /**
+  * @api {delete} /files/:encoded_path remove
+  * @apiName RemoveFile
+  * @apiGroup File
+  * @apiDescription To remove a file
+  * @apiPermission authorized
+  *
+  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  */
   async remove() {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
@@ -188,13 +227,27 @@ class FileController extends Controller {
     this.deleted();
   }
 
+  /**
+  * @api {put} /files/:encoded_path/move move
+  * @apiName MoveFile
+  * @apiGroup File
+  * @apiDescription To move a file
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded previous file path.
+  * Such as 'username%2Fsitename%2Fprevious%2Findex.md'
+  * @apiParam {String} new_path New path of the file such as 'username/sitename/new/index.md'
+  * @apiParam {String} [content] Content of the file
+  */
   async move() {
     this.ctx.validate(move_rule);
+    const previous_path = this.ctx.params.path;
+    const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     this.validate_file_path();
     const project = await this.get_writable_project();
     await this.throw_if_can_not_move();
     const file = await this.ctx.model.File
-      .get_by_path_from_db(this.ctx.request.body.previous_path)
+      .get_by_path_from_db(previous_path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -203,8 +256,8 @@ class FileController extends Controller {
 
     const content = this.ctx.request.body.content;
     if (content) { file.content = content; }
-    file.previous_path = file.path;
-    file.path = this.ctx.params.path;
+    file.previous_path = previous_path;
+    file.path = new_path;
     file.name = this.get_file_name();
 
     const commit_options = {

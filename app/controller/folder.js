@@ -14,6 +14,15 @@ const create_rule = {
 };
 
 class FolderController extends Controller {
+  /**
+  * @api {post} /folders/:encoded_path create
+  * @apiName CreateFolder
+  * @apiGroup Folder
+  * @apiDescription To create a folder
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded new folder path such as 'username%2Fsitename%2Fnew'
+  */
   async create() {
     this.ctx.validate(create_rule);
     const path = this.ctx.params.path;
@@ -54,6 +63,15 @@ class FolderController extends Controller {
     this.created();
   }
 
+  /**
+  * @api {delete} /folders/:encoded_path remove
+  * @apiName RemoveFolder
+  * @apiGroup Folder
+  * @apiDescription To remove a folder and all of its sub files
+  * @apiPermission authorized user
+  *
+  * @apiParam {String} encoded_path Urlencoded folder path such as 'username%2Fsitename%2Ftoberemoved'
+  */
   async remove() {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
@@ -96,8 +114,6 @@ class FolderController extends Controller {
     await this.send_message(commit._id, project._id);
     this.deleted();
   }
-
-  async rename() { return ''; }
 }
 
 module.exports = FolderController;
