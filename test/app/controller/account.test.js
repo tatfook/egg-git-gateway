@@ -2,22 +2,27 @@
 
 const { app } = require('egg-mock/bootstrap');
 
+const admin = {
+  username: 'unittest',
+  userId: 15,
+  roleId: 10,
+};
+
+const user = {
+  id: 123,
+  username: 'gitgateway123',
+  password: '12345678',
+};
+
+let token;
+
+before(() => {
+  const secret = app.config.jwt.secret;
+  token = app.jwt.sign(admin, secret);
+});
+
 describe('test/app/controller/account.test.js', () => {
-
-  const admin = {
-    username: 'unittest',
-    userId: 15,
-    roleId: 10,
-  };
-
   it('should post /accounts to create an account', () => {
-    const user = {
-      username: 'gitgateway123',
-      password: '12345678',
-    };
-
-    const secret = app.config.jwt.secret;
-    const token = app.jwt.sign(admin, secret);
     return app.httpRequest()
       .post('/accounts')
       .send(user)
@@ -26,8 +31,6 @@ describe('test/app/controller/account.test.js', () => {
   });
 
   it('should delete /accounts/:id to delete an account', () => {
-    const secret = app.config.jwt.secret;
-    const token = app.jwt.sign(admin, secret);
     return app.httpRequest()
       .del('/accounts/gitgateway123')
       .set('Authorization', `Bearer ${token}`)

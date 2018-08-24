@@ -1,7 +1,7 @@
 'use strict';
 
 const { assert } = require('egg-mock/bootstrap');
-const { empty } = require('../../app/lib/helper');
+const { empty } = require('../../../app/lib/helper');
 
 describe('test/app/lib/helper.test.js', () => {
   it('should return true', () => {
