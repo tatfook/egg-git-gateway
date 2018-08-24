@@ -45,7 +45,7 @@ class ProjectController extends Controller {
         account_id: account._id,
       }).catch(err => {
         this.ctx.logger.error(err);
-        this.ctx.throw(409, 'project exists');
+        this.ctx.throw(err.response.status, err.response.data);
       });
 
     project.sitename = this.ctx.request.body.sitename;

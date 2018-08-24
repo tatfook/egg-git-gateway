@@ -3,36 +3,52 @@
 const { app, assert } = require('egg-mock/bootstrap');
 
 const project = {
-  sitename: 'justtest1234',
-  site_id: 123,
-  hook_url: 'http://stage.keepwork.com/api/wiki/models/data_source/gitlabWebhook',
+  sitename: 'test',
+  site_id: 456,
   visibility: 'public',
-};
-
-const admin = {
-  username: 'unittest',
-  userId: 15,
-  roleId: 10,
 };
 
 let token;
 
-before(() => {
+before(async () => {
+  const admin = {
+    username: 'unittest',
+    userId: 15,
+    roleId: 10,
+  };
+
   const secret = app.config.jwt.secret;
   token = app.jwt.sign(admin, secret);
+
+  const user = {
+    id: 123,
+    username: 'unittest',
+    password: '12345678',
+  };
+
+  await app.httpRequest()
+    .post('/accounts')
+    .set('Authorization', `Bearer ${token}`)
+    .send(user);
+});
+
+after(async () => {
+  await app.httpRequest()
+    .del('/accounts/unittest')
+    .set('Authorization', `Bearer ${token}`);
 });
 
 describe('test/app/controller/project.test.js', () => {
   it('should post /projects/user/:kw_username to create a project', () => {
     return app.httpRequest()
-      .post('/projects/user/backend')
+      .post('/projects/user/unittest')
       .set('Authorization', `Bearer ${token}`)
       .send(project)
       .expect(201);
   });
 
   it('should put /projects/:path/visibility to update the visibility of a project', () => {
-    const path = encodeURIComponent('backend/justtest1234');
+    const path = encodeURIComponent('unittest/test');
     return app.httpRequest()
       .put(`/projects/${path}/visibility`)
       .send({ visibility: 'private' })
@@ -44,7 +60,7 @@ describe('test/app/controller/project.test.js', () => {
   });
 
   it('should delete /projects/:path to delete an project', () => {
-    const path = encodeURIComponent('backend/justtest1234');
+    const path = encodeURIComponent('unittest/test');
     return app.httpRequest()
       .del(`/projects/${path}`)
       .set('Authorization', `Bearer ${token}`)

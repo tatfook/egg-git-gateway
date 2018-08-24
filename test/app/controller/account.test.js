@@ -2,12 +2,6 @@
 
 const { app } = require('egg-mock/bootstrap');
 
-const admin = {
-  username: 'unittest',
-  userId: 15,
-  roleId: 10,
-};
-
 const user = {
   id: 123,
   username: 'gitgateway123',
@@ -17,6 +11,12 @@ const user = {
 let token;
 
 before(() => {
+  const admin = {
+    username: 'unittest',
+    userId: 15,
+    roleId: 10,
+  };
+
   const secret = app.config.jwt.secret;
   token = app.jwt.sign(admin, secret);
 });

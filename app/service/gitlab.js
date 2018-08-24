@@ -55,7 +55,7 @@ class GitlabService extends Service {
   async delete_account(account_id) {
     assert(account_id);
     await this.client
-      .delete(`/users/${account_id}`)
+      .delete(`/users/${account_id}?hard_delete=true`, { hard_delete: true })
       .catch(err => {
         this.app.logger.error(`failed to delete git account ${account_id}`);
         this.app.logger.error(err);
