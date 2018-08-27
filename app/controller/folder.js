@@ -41,6 +41,8 @@ class FolderController extends Controller {
       name: '.gitkeep',
       type: 'tree',
       path,
+      project_id: project._id,
+      account_id: project.account_id,
     });
 
     const commit_options = {
