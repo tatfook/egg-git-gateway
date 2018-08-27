@@ -11,6 +11,10 @@ before(() => {
 });
 
 describe('test/app/service/gitlab.test.js', () => {
+  it('should get gitlab client', () => {
+    assert(GitlabService.client);
+  });
+
   describe('about account', () => {
     it('should create a gitlab account for the given user, and then delete the account', async () => {
       const user = {
@@ -27,11 +31,7 @@ describe('test/app/service/gitlab.test.js', () => {
     });
   });
 
-  describe('about project', async () => {
-    it('should get gitlab client', () => {
-      assert(GitlabService.client);
-    });
-
+  describe('about project', () => {
     it('should create a project', async () => {
       const project_to_create = {
         name: 'test0001',
