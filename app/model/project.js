@@ -8,6 +8,7 @@ module.exports = app => {
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
   const logger = app.logger;
+  const cache_expire = app.config.cache_expire;
 
   const ProjectSchema = new Schema({
     _id: Number,
@@ -25,7 +26,7 @@ module.exports = app => {
   statics.cache = async function(project) {
     const key = generate_project_key(project.path);
     const serilized_project = JSON.stringify(project);
-    await redis.set(key, serilized_project)
+    await redis.setex(key, cache_expire, serilized_project)
       .catch(err => {
         logger.error(`fail to cache project ${key}`);
         logger.error(err);

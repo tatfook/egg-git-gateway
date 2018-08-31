@@ -56,6 +56,7 @@ class NodeController extends Controller {
   throw_if_not_exist(file, type = 'blob') {
     const errMsg = `${file_type[type]} not found`;
     if (empty(file)) { this.ctx.throw(404, errMsg); }
+    file.type = file.type || 'blob';
     if (file.type !== type) { this.ctx.throw(404, errMsg); }
   }
 

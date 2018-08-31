@@ -31,5 +31,7 @@ module.exports = appInfo => {
     allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
   };
 
+  config.cache_expire = 3600;
+
   return config;
 };

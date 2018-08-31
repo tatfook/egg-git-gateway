@@ -7,6 +7,7 @@ module.exports = app => {
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
   const logger = app.logger;
+  const cache_expire = app.config.cache_expire;
 
   const AccountSchema = new Schema({
     _id: Number,
@@ -20,7 +21,7 @@ module.exports = app => {
   statics.cache = async function(account) {
     const key = generate_account_key(account.kw_username);
     const serilize_account = JSON.stringify(account);
-    await redis.set(key, serilize_account)
+    await redis.setex(key, cache_expire, serilize_account)
       .catch(err => {
         logger.error(`fail to cache account ${key}`);
         logger.error(err);

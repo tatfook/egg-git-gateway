@@ -40,6 +40,7 @@ module.exports = app => {
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
   const logger = app.logger;
+  const cache_expire = app.config.cache_expire;
 
   const FileSchema = new Schema({
     name: String,
@@ -99,7 +100,7 @@ module.exports = app => {
 
   statics.cache_content = function(file, pipeline = redis.pipeline()) {
     const key = generate_file_key(file.path);
-    pipeline.set(key, serilize_file(file));
+    pipeline.setex(key, cache_expire, serilize_file(file));
   };
 
   statics.move_cache = async function(file, pipeline = redis.pipeline()) {
@@ -126,6 +127,7 @@ module.exports = app => {
   statics.cache_tree = function(path, tree, pipeline = redis.pipeline()) {
     const key = generate_tree_key(path);
     pipeline.hmset(key, serilize_tree(tree));
+    pipeline.expire(key, cache_expire);
     return pipeline;
   };
 
@@ -170,7 +172,12 @@ module.exports = app => {
     const file = await this.findOne({ path })
       .catch(err => { logger.error(err); });
     if (!empty(file)) {
-      await this.cache(file);
+      const pipeline = await this.cache(file);
+      await pipeline.exec()
+        .catch(err => {
+          logger.error(err);
+          throw err;
+        });
       return file;
     }
   };
