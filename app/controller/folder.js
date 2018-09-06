@@ -29,15 +29,14 @@ class FolderController extends Controller {
     const project = await this.get_writable_project();
     await this.throw_if_parent_node_not_exist();
     let folder = await this.ctx.model.File
-      .get_by_path(path)
+      .get_by_path(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
 
     this.throw_if_exists(folder);
-    folder = new this.ctx.model.File();
-    folder.set({
+    folder = new this.ctx.model.File({
       name: '.gitkeep',
       type: 'tree',
       path,
@@ -78,7 +77,7 @@ class FolderController extends Controller {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     const folder = await this.ctx.model.File
-      .get_by_path_from_db(path)
+      .get_by_path_from_db(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -87,6 +86,7 @@ class FolderController extends Controller {
 
     const sub_files = await this.ctx.model.File
       .get_tree_by_path_from_db(
+        project._id,
         this.ctx.params.path,
         true,
         { skip: 0, limit: 9999999 }
@@ -107,7 +107,7 @@ class FolderController extends Controller {
       });
 
     await this.ctx.model.File
-      .delete_sub_files_and_release_cache(folder.path, sub_files)
+      .delete_sub_files_and_release_cache(project._id, folder.path, sub_files)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);

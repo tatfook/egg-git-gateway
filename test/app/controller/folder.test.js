@@ -3,6 +3,7 @@
 const { app } = require('egg-mock/bootstrap');
 
 let token;
+const project_path = encodeURIComponent('test_folder/test_folder');
 
 before(async () => {
   const admin = {
@@ -48,16 +49,16 @@ after(async () => {
 
 const path = encodeURIComponent('test_folder/test_folder/new_folder');
 describe('test/app/controller/folder.test.js', () => {
-  it('should post /folders/:path to create a folder', () => {
+  it('should post /projects/:project_path/folders/:path to create a folder', () => {
     return app.httpRequest()
-      .post(`/folders/${path}`)
+      .post(`/projects/${project_path}/folders/${path}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(201);
   });
 
-  it('should delete /folders/:path to remove a folder', () => {
+  it('should delete /projects/:project_path/folders/:path to remove a folder', () => {
     return app.httpRequest()
-      .del(`/folders/${path}`)
+      .del(`/projects/${project_path}/folders/${path}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });

@@ -64,27 +64,14 @@ class NodeController extends Controller {
     if (!empty(file)) { this.ctx.throw(409); }
   }
 
-  async throw_if_can_not_move() {
-    this.throw_if_not_inside_the_same_project();
-    await this.throw_if_target_file_exist();
-    await this.throw_if_parent_node_not_exist();
+  async throw_if_can_not_move(project_id) {
+    await this.throw_if_target_file_exist(project_id);
+    await this.throw_if_parent_node_not_exist(project_id);
   }
 
-  throw_if_not_inside_the_same_project() {
-    const new_path = this.ctx.params.path;
-    const previous_path = this.ctx.request.body.previous_path;
-    const project_of_new_path = this.get_project_path(new_path);
-    const project_of_previous_path = this.get_project_path(previous_path);
-    const inside_the_same_project = (project_of_new_path === project_of_previous_path);
-    if (!inside_the_same_project) {
-      const errMsg = 'Can only move inside the same project';
-      this.ctx.throw(400, errMsg);
-    }
-  }
-
-  async throw_if_target_file_exist() {
+  async throw_if_target_file_exist(project_id) {
     const file_in_target_path = await this.ctx.model.File
-      .get_by_path(this.ctx.params.path)
+      .get_by_path(project_id, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -92,9 +79,9 @@ class NodeController extends Controller {
     this.throw_if_exists(file_in_target_path);
   }
 
-  async throw_if_parent_node_not_exist() {
+  async throw_if_parent_node_not_exist(project_id) {
     const errMsg = await this.ctx.model.File
-      .ensure_parent_exist(this.ctx.params.path)
+      .ensure_parent_exist(project_id, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -103,7 +90,7 @@ class NodeController extends Controller {
   }
 
   async get_project(project_path) {
-    project_path = project_path || this.get_project_path();
+    project_path = project_path || this.ctx.params.project_path;
     const project = await this.ctx.model.Project
       .get_by_path(project_path)
       .catch(err => {

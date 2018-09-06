@@ -1,10 +1,9 @@
 'use strict';
 
-const Controller = require('../core/base_controller');
+const Controller = require('./node');
 const { paginate } = require('../lib/helper');
 
 class TreeController extends Controller {
-
   /**
   * @api {get} /tree/:encoded_path get
   * @apiName GetTree
@@ -21,8 +20,10 @@ class TreeController extends Controller {
   async show() {
     const from_cache = !this.ctx.query.refresh_cache;
     const recursive = this.ctx.query.recursive;
+    const project = await this.get_project(this.ctx.params.project_path);
     const tree = await this.ctx.model.File
       .get_tree_by_path(
+        project._id,
         this.ctx.params.path,
         from_cache,
         recursive,

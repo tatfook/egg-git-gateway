@@ -47,44 +47,45 @@ after(async () => {
 });
 
 describe('test/app/controller/file.test.js', () => {
+  const project_path = encodeURIComponent('test_file/test_file');
   const path = encodeURIComponent('test_file/test_file/test.md');
-  it('should post /files/:path to create a file', () => {
+  it('should post /projects/:project_path/files/:path to create a file', () => {
     const file = { content: '123' };
     return app.httpRequest()
-      .post(`/files/${path}`)
+      .post(`/projects/${project_path}/files/${path}`)
       .send(file)
       .set('Authorization', `Bearer ${token}`)
       .expect(201);
   });
 
-  it('should get /files/:path to get a file', () => {
+  it('should get /projects/:project_path/files/:path to get a file', () => {
     return app.httpRequest()
-      .get(`/files/${path}`)
+      .get(`/projects/${project_path}/files/${path}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect({ content: '123' });
   });
 
-  it('should put /files/:path to update a file', () => {
+  it('should put /projects/:project_path/files/:path to update a file', () => {
     return app.httpRequest()
-      .put(`/files/${path}`)
+      .put(`/projects/${project_path}/files/${path}`)
       .send({ content: '456' })
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });
 
   const new_path = 'test_file/test_file/test_new.md';
-  it('should put /files/:path/move to move a file', () => {
+  it('should put /projects/:project_path/files/:path/move to move a file', () => {
     return app.httpRequest()
-      .put(`/files/${path}/move`)
+      .put(`/projects/${project_path}/files/${path}/move`)
       .send({ new_path })
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });
 
-  it('should delete /files/:path to remove a file', () => {
+  it('should delete /projects/:project_path/files/:path to remove a file', () => {
     return app.httpRequest()
-      .del(`/files/${encodeURIComponent(new_path)}`)
+      .del(`/projects/${project_path}/files/${encodeURIComponent(new_path)}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });

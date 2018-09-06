@@ -25,8 +25,23 @@ describe('test/app/model/project.test.js', () => {
     assert(ProjectModel);
   });
 
-  it('should cache after created', async () => {
+  it('should create the project', async () => {
     await ProjectModel.create(project);
+  });
+
+  it('should get project from db', async () => {
+    const loaded_project = await ProjectModel.get_by_path_from_db(project.path);
+    assert(loaded_project._id === project._id);
+    assert(loaded_project.visibility === project.visibility);
+    assert(loaded_project.name === project.name);
+    assert(loaded_project.site_id === project.site_id);
+    assert(loaded_project.sitename === project.sitename);
+    assert(loaded_project.path === project.path);
+    assert(loaded_project.git_path === project.git_path);
+    assert(loaded_project.account_id === project.account_id);
+  });
+
+  it('should get the cache', async () => {
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
     assert(cached_data._id === project._id);
     assert(cached_data.visibility === project.visibility);
@@ -38,12 +53,12 @@ describe('test/app/model/project.test.js', () => {
     assert(cached_data.account_id === project.account_id);
   });
 
-  it('should cache after updated', async () => {
+  it('should release cache after updated', async () => {
     const loaded_project = await ProjectModel.get_by_path_from_db(project.path);
     loaded_project.visibility = 'public';
     await loaded_project.save();
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
-    assert(cached_data.visibility === 'public');
+    assert(!cached_data);
   });
 
   it('should release the cache after deleted', async () => {

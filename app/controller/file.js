@@ -56,7 +56,7 @@ class FileController extends Controller {
     const path = this.ctx.params.path;
     const from_cache = !this.ctx.query.refresh_cache;
     let file = await this.ctx.model.File
-      .get_by_path(path, from_cache)
+      .get_by_path(project._id, path, from_cache)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -87,16 +87,15 @@ class FileController extends Controller {
     const project = await this.get_writable_project();
     await this.throw_if_parent_node_not_exist();
     let file = await this.ctx.model.File
-      .get_by_path(path)
+      .get_by_path(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
 
     this.throw_if_exists(file);
-    file = new this.ctx.model.File();
-    file.set({
-      name: this.get_file_name(),
+    file = new this.ctx.model.File({
+      name: this.get_file_name(path),
       content: this.ctx.request.body.content,
       path,
       project_id: project._id,
@@ -144,7 +143,7 @@ class FileController extends Controller {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     const file = await this.ctx.model.File
-      .get_by_path_from_db(path)
+      .get_by_path_from_db(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -193,7 +192,7 @@ class FileController extends Controller {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     const file = await this.ctx.model.File
-      .get_by_path_from_db(path)
+      .get_by_path_from_db(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -245,9 +244,9 @@ class FileController extends Controller {
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     this.validate_file_path();
     const project = await this.get_writable_project();
-    await this.throw_if_can_not_move();
+    await this.throw_if_can_not_move(project._id);
     const file = await this.ctx.model.File
-      .get_by_path_from_db(previous_path)
+      .get_by_path_from_db(project._id, previous_path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -295,13 +294,7 @@ class FileController extends Controller {
 
   async load_from_gitlab(project) {
     if (!project) {
-      const project_path = this.get_project_path();
-      project = await this.ctx.model.Project
-        .get_by_path(project_path)
-        .catch(err => {
-          this.ctx.logger.error(err);
-          this.ctx.throw(500);
-        });
+      project = await this.get_project();
     }
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 

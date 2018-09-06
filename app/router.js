@@ -20,14 +20,14 @@ module.exports = app => {
   router.put('/projects/:path/visibility', controller.project.update_visibility);
   router.del('/projects/:path', controller.project.remove);
 
-  router.get('/tree/:path', controller.tree.show);
+  router.get('/projects/:project_path/tree/:path', controller.tree.show);
 
-  router.get('/files/:path', controller.file.show);
-  router.post('/files/:path', controller.file.create);
-  router.put('/files/:path', controller.file.update);
-  router.del('/files/:path', controller.file.remove);
-  router.put('/files/:path/move', controller.file.move);
+  router.get('/projects/:project_path/files/:path', controller.file.show);
+  router.post('/projects/:project_path/files/:path', controller.file.create);
+  router.put('/projects/:project_path/files/:path', controller.file.update);
+  router.del('/projects/:project_path/files/:path', controller.file.remove);
+  router.put('/projects/:project_path/files/:path/move', controller.file.move);
 
-  router.post('/folders/:path', controller.folder.create);
-  router.del('/folders/:path', controller.folder.remove);
+  router.post('/projects/:project_path/folders/:path', controller.folder.create);
+  router.del('/projects/:project_path/folders/:path', controller.folder.remove);
 };

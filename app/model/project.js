@@ -70,18 +70,18 @@ module.exports = app => {
       project = await this.load_cache_by_path(path);
       if (!empty(project)) { return project; }
     }
-
     // load from db
-    project = await this.findOne({ path })
+    project = await this.get_by_path_from_db(path);
+    return project;
+  };
+
+  statics.get_by_path_from_db = async function(path) {
+    const project = await this.findOne({ path })
       .catch(err => { logger.error(err); });
     if (!empty(project)) {
       await this.cache(project);
       return project;
     }
-  };
-
-  statics.get_by_path_from_db = async function(path) {
-    return this.get_by_path(path, false);
   };
 
   statics.delete_and_release_cache = async function(path) {
@@ -120,7 +120,7 @@ module.exports = app => {
   };
 
   ProjectSchema.post('save', async function(project) {
-    await statics.cache(project);
+    await statics.release_cache(project.path);
   });
 
   return mongoose.model('Project', ProjectSchema);

@@ -3,6 +3,7 @@
 const { app, assert } = require('egg-mock/bootstrap');
 
 let token;
+const project_path = encodeURIComponent('test_tree/test_tree');
 
 before(async () => {
   const admin = {
@@ -38,13 +39,13 @@ before(async () => {
   const file = { content: 'hello' };
   const file_path = 'test_tree/test_tree/test.md';
   await app.httpRequest()
-    .post(`/files/${encodeURIComponent(file_path)}`, file)
+    .post(`/projects/${project_path}/files/${encodeURIComponent(file_path)}`, file)
     .set('Authorization', `Bearer ${token}`)
     .send(project);
 
   const folder_path = 'test_tree/test_tree/new_folder';
   await app.httpRequest()
-    .post(`/folders/${encodeURIComponent(folder_path)}`)
+    .post(`/projects/${project_path}/folders/${encodeURIComponent(folder_path)}`)
     .set('Authorization', `Bearer ${token}`)
     .send(project);
 });
@@ -53,7 +54,7 @@ describe('test/app/controller/file.test.js', () => {
   it('should get a tree', () => {
     const tree_path = encodeURIComponent('test_tree/test_tree');
     return app.httpRequest()
-      .get(`/tree/${tree_path}`)
+      .get(`/projects/${project_path}/tree/${tree_path}`)
       .expect(200)
       .expect(response => {
         const tree = response.body;

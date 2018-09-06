@@ -44,18 +44,16 @@ module.exports = app => {
 
   const FileSchema = new Schema({
     name: String,
-    path: { type: String, unique: true },
+    path: String,
     content: String,
     type: { type: String, default: 'blob' },
     project_id: Number,
     account_id: Number,
   }, { timestamps: true });
 
-  const statics = FileSchema.statics;
+  FileSchema.index({ project_id: 1, path: 1 });
 
-  FileSchema.virtual('project_path').get(function() {
-    return statics.get_project_path(this.path);
-  });
+  const statics = FileSchema.statics;
 
   FileSchema.virtual('tree_path').get(function() {
     return statics.get_tree_path(this.path, this.name);
@@ -74,49 +72,33 @@ module.exports = app => {
     return tree_path;
   };
 
-  statics.get_project_path = function(path) {
-    const project_path_pattern = /^[^\/]+\/[^\/]+/;
-    try {
-      const project_path = path.match(project_path_pattern)[0];
-      return project_path;
-    } catch (err) {
-      logger.error('invalid path');
-      throw err;
-    }
-  };
-
-  statics.cache = async function(file, pipeline = redis.pipeline()) {
+  statics.cache = function(file, pipeline = redis.pipeline()) {
+    assert(file.project_id);
+    assert(file.path);
     this.cache_content(file, pipeline);
-    await this.cache_tree_if_exists(file.tree_path, file, pipeline);
     return pipeline;
   };
 
   statics.release_cache = function(file, pipeline = redis.pipeline()) {
+    assert(file.project_id);
+    assert(file.path);
     this.release_content_cache(file, pipeline);
-    this.release_node_cache(file, pipeline);
-    if (file.type === 'tree') { this.release_tree_cache(file.path, pipeline); }
+    this.release_tree_cache(file, pipeline);
     return pipeline;
   };
 
   statics.cache_content = function(file, pipeline = redis.pipeline()) {
-    const key = generate_file_key(file.path);
+    const key = generate_file_key(file.project_id, file.path);
     pipeline.setex(key, cache_expire, serilize_file(file));
   };
 
-  statics.move_cache = async function(file, pipeline = redis.pipeline()) {
-    assert(file.previous_path);
-    this.release_content_cache({ path: file.previous_path }, pipeline);
-    this.release_node_cache({ path: file.previous_path }, pipeline);
-    return pipeline;
-  };
-
   statics.release_content_cache = function(file, pipeline = redis.pipeline()) {
-    const key = generate_file_key(file.path);
+    const key = generate_file_key(file.project_id, file.path);
     pipeline.del(key);
   };
 
-  statics.load_content_cache_by_path = async function(path) {
-    const key = generate_file_key(path);
+  statics.load_content_cache_by_path = async function(project_id, path) {
+    const key = generate_file_key(project_id, path);
     const project = await redis.get(key)
       .catch(err => {
         logger.error(err);
@@ -124,21 +106,15 @@ module.exports = app => {
     return JSON.parse(project);
   };
 
-  statics.cache_tree = function(path, tree, pipeline = redis.pipeline()) {
-    const key = generate_tree_key(path);
+  statics.cache_tree = function(project_id, path, tree, pipeline = redis.pipeline()) {
+    const key = generate_tree_key(project_id, path);
     pipeline.hmset(key, serilize_tree(tree));
     pipeline.expire(key, cache_expire);
     return pipeline;
   };
 
-  statics.cache_tree_if_exists = async function(path, tree, pipeline = redis.pipeline()) {
-    const key = generate_tree_key(path);
-    const exists = await redis.exists(key);
-    if (exists) { this.cache_tree(path, tree, pipeline); }
-  };
-
-  statics.load_tree_cache_by_path = async function(path) {
-    const key = generate_tree_key(path);
+  statics.load_tree_cache_by_path = async function(project_id, path) {
+    const key = generate_tree_key(project_id, path);
     const serilized_tree = await redis.hvals(key)
       .catch(err => {
         logger.error(err);
@@ -146,33 +122,27 @@ module.exports = app => {
     return deserialize_tree(serilized_tree);
   };
 
-  statics.release_tree_cache = function(path, pipeline = redis.pipeline()) {
-    const key = generate_tree_key(path);
+  statics.release_tree_cache = function(file, pipeline = redis.pipeline()) {
+    const key = generate_tree_key(file.project_id, file.tree_path);
     pipeline.del(key);
     return pipeline;
-  };
-
-  statics.release_node_cache = function(file, pipeline = redis.pipeline()) {
-    const tree_path = this.get_tree_path(file.path);
-    const key = generate_tree_key(tree_path);
-    pipeline.hdel(key, file.path);
   };
 
   statics.release_multi_files_cache = async function(files, pipeline = redis.pipeline()) {
     const keys_to_release = [];
     for (const file of files) {
-      keys_to_release.push(generate_file_key(file.path));
-      if (file.type === 'tree') { keys_to_release.push(generate_tree_key(file.path)); }
+      keys_to_release.push(generate_file_key(file.project_id, file.path));
+      if (file.type === 'tree') { keys_to_release.push(generate_tree_key(file.project_id, file.path)); }
     }
     pipeline.del(keys_to_release);
     return pipeline;
   };
 
-  statics.get_by_path_from_db = async function(path) {
-    const file = await this.findOne({ path })
+  statics.get_by_path_from_db = async function(project_id, path) {
+    const file = await this.findOne({ project_id, path })
       .catch(err => { logger.error(err); });
     if (!empty(file)) {
-      const pipeline = await this.cache(file);
+      const pipeline = this.cache(file);
       await pipeline.exec()
         .catch(err => {
           logger.error(err);
@@ -182,18 +152,22 @@ module.exports = app => {
     }
   };
 
-  statics.get_by_path = async function(path, from_cache = true) {
+  statics.get_by_path = async function(project_id, path, from_cache = true) {
     let file;
     if (from_cache) {
-      file = await this.load_content_cache_by_path(path);
+      file = await this.load_content_cache_by_path(project_id, path);
       if (!empty(file)) { return file; }
     }
-    file = await this.get_by_path_from_db(path);
+    file = await this.get_by_path_from_db(project_id, path);
     return file;
   };
 
   statics.move = async function(file) {
-    const pipeline = this.release_cache({ path: file.previous_path });
+    const pipeline = this.release_cache({
+      project_id: file.project_id,
+      path: file.previous_path,
+      tree_path: file.tree_path,
+    });
     await pipeline.exec()
       .catch(err => {
         logger.error(err);
@@ -223,16 +197,16 @@ module.exports = app => {
   };
 
   statics.get_tree_by_path_from_db = async function(
-    path, recursive = false, pagination) {
+    project_id, path, recursive = false, pagination) {
     const path_pattern = recursive ? `^${path}\/` : `^${path}\/[^\/]+$`;
-    const query_condition = { path: new RegExp(path_pattern, 'u') };
+    const query_condition = { project_id, path: new RegExp(path_pattern, 'u') };
     const selected_fields = 'name path type -_id';
     const tree = await this.find(query_condition, selected_fields)
       .skip(pagination.skip)
       .limit(pagination.limit)
       .catch(err => { logger.error(err); });
     if (tree.length > 0 && !recursive) {
-      const pipeline = this.cache_tree(path, tree);
+      const pipeline = this.cache_tree(project_id, path, tree);
       await pipeline.exec()
         .catch(err => {
           logger.error(`failed cache tree ${path}`);
@@ -243,25 +217,25 @@ module.exports = app => {
   };
 
   statics.get_tree_by_path = async function(
-    path, from_cache = true, recursive = false, pagination) {
+    project_id, path, from_cache = true, recursive = false, pagination) {
     let tree;
     if (!recursive) {
       pagination = { skip: 0, limit: 9999999 };
       if (from_cache) {
-        tree = await this.load_tree_cache_by_path(path);
+        tree = await this.load_tree_cache_by_path(project_id, path);
         if (tree.length > 0) { return tree; }
       }
     }
-    tree = await this.get_tree_by_path_from_db(path, recursive, pagination);
+    tree = await this.get_tree_by_path_from_db(project_id, path, recursive, pagination);
     return tree;
   };
 
-  statics.ensure_parent_exist = async function(path) {
+  statics.ensure_parent_exist = async function(project_id, path) {
     const ancestor_names = path.split('/');
     if (ancestor_names.length <= 3) { return; }
     const file_name = ancestor_names[ancestor_names.length - 1];
     const parent_path = this.get_tree_path(path, file_name);
-    const parent = await this.get_by_path(parent_path);
+    const parent = await this.get_by_path(project_id, parent_path);
     if (empty(parent)) {
       const errMsg = `Parent folder ${parent_path} not found`;
       return errMsg;
@@ -289,10 +263,10 @@ module.exports = app => {
   };
 
   statics.delete_sub_files_and_release_cache =
-  async function(tree_path, sub_files, remove_self = true) {
+  async function(project_id, tree_path, sub_files, remove_self = true) {
     const pattern = new RegExp(`^${tree_path}/.*`, 'u');
     if (!sub_files) {
-      sub_files = await this.get_sub_files_by_path(tree_path, pattern, remove_self)
+      sub_files = await this.get_sub_files_by_path(project_id, tree_path, pattern, remove_self)
         .catch(err => {
           logger.error(err);
           throw err;
@@ -308,7 +282,7 @@ module.exports = app => {
         throw err;
       });
 
-    await this.deleteMany({ path: pattern })
+    await this.deleteMany({ project_id, path: pattern })
       .catch(err => {
         logger.error(err);
         throw err;
@@ -353,11 +327,7 @@ module.exports = app => {
   };
 
   FileSchema.post('save', async function(file) {
-    const pipeline = await statics.cache(file)
-      .catch(err => {
-        logger.error(err);
-        throw err;
-      });
+    const pipeline = statics.release_cache(file);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);
