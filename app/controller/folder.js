@@ -15,13 +15,14 @@ const create_rule = {
 
 class FolderController extends Controller {
   /**
-  * @api {post} /folders/:encoded_path create
+  * @api {post} /projects/:encoded_project_path/folders/:encoded_path create
   * @apiName CreateFolder
   * @apiGroup Folder
   * @apiDescription To create a folder
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded new folder path such as 'username%2Fsitename%2Fnew'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async create() {
     this.ctx.validate(create_rule);
@@ -46,13 +47,14 @@ class FolderController extends Controller {
   }
 
   /**
-  * @api {delete} /folders/:encoded_path remove
+  * @api {delete} /projects/:encoded_project_path/folders/:encoded_path remove
   * @apiName RemoveFolder
   * @apiGroup Folder
   * @apiDescription To remove a folder and all of its sub files
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded folder path such as 'username%2Fsitename%2Ftoberemoved'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async remove() {
     const path = this.ctx.params.path;

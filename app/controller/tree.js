@@ -5,13 +5,14 @@ const { paginate } = require('../lib/helper');
 
 class TreeController extends Controller {
   /**
-  * @api {get} /tree/:encoded_path get
+  * @api {get} /projects/:encoded_project_path/tree/:encoded_path get
   * @apiName GetTree
   * @apiGroup Tree
   * @apiDescription To get a tree
   * @apiPermission anyone
   *
-  * @apiParam {String} encoded_path Urlencoded tree path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   * @apiParam {Boolean} [recursive=false] Whether get all sub tree
   * @apiParam {Number} [page=1] Page number, only works if recursive = true
   * @apiParam {Number} [per_page=20] Items amount for a page, only works if recursive = true

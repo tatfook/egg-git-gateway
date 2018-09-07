@@ -42,13 +42,14 @@ const move_rule = {
 
 class FileController extends Controller {
   /**
-  * @api {get} /files/:encoded_path get
+  * @api {get} /projects/:encoded_project_path/files/:encoded_path get
   * @apiName GetFile
   * @apiGroup File
   * @apiDescription To get a file
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   * @apiParam {Boolean} [refresh_cache=false]  Whether refresh the cache of this file
   */
   async show() {
@@ -71,13 +72,14 @@ class FileController extends Controller {
   }
 
   /**
-  * @api {post} /files/:encoded_path create
+  * @api {post} /projects/:encoded_project_path/files/:encoded_path create
   * @apiName CreateFile
   * @apiGroup File
   * @apiDescription To create a file
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   * @apiParam {String} [content] Content of the file
   */
   async create() {
@@ -122,13 +124,14 @@ class FileController extends Controller {
   }
 
   /**
-  * @api {put} /files/:encoded_path update
+  * @api {put} /projects/:encoded_project_path/files/:encoded_path update
   * @apiName UpdateFile
   * @apiGroup File
   * @apiDescription To update a file
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   * @apiParam {String} content Content of the file
   */
   async update() {
@@ -173,13 +176,14 @@ class FileController extends Controller {
   }
 
   /**
-  * @api {delete} /files/:encoded_path remove
+  * @api {delete} /projects/:encoded_project_path/files/:encoded_path remove
   * @apiName RemoveFile
   * @apiGroup File
   * @apiDescription To remove a file
   * @apiPermission authorized
   *
-  * @apiParam {String} encoded_path Urlencoded file path such as 'username%2Fsitename%2Findex.md'
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async remove() {
     const path = this.ctx.params.path;
@@ -220,13 +224,14 @@ class FileController extends Controller {
   }
 
   /**
-  * @api {put} /files/:encoded_path/move move
+  * @api {put} /projects/:encoded_project_path/files/:encoded_path/move move
   * @apiName MoveFile
   * @apiGroup File
   * @apiDescription To move a file
   * @apiPermission authorized user
   *
-  * @apiParam {String} encoded_path Urlencoded previous file path.
+  * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   * Such as 'username%2Fsitename%2Fprevious%2Findex.md'
   * @apiParam {String} new_path New path of the file such as 'username/sitename/new/index.md'
   * @apiParam {String} [content] Content of the file
