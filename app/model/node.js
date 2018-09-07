@@ -110,7 +110,7 @@ module.exports = app => {
     return pipeline;
   };
 
-  statics.release_multi_files_cache = async function(files, pipeline = redis.pipeline()) {
+  statics.release_multi_files_cache = function(files, pipeline = redis.pipeline()) {
     const keys_to_release = [];
     for (const file of files) {
       keys_to_release.push(generate_file_key(file.project_id, file.path));
@@ -275,7 +275,7 @@ module.exports = app => {
 
     if (empty(sub_files)) { return; }
 
-    const pipeline = await this.release_multi_files_cache(sub_files);
+    const pipeline = this.release_multi_files_cache(sub_files);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);

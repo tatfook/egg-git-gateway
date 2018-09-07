@@ -11,7 +11,7 @@ class CommitFormatter {
     };
   }
 
-  static formmat_create_action(file, options) {
+  static format_create_action(file, options) {
     return {
       action: 'create',
       file_path: file.path,
@@ -29,9 +29,8 @@ class CommitFormatter {
     };
   }
 
-  static formmat_delete_action(file) {
-    let file_path = file.path;
-    if (file.type === 'tree') { file_path = `${file_path}/${file.name}`; }
+  static format_delete_action(file) {
+    const file_path = file.path;
     return {
       action: 'delete',
       file_path,
@@ -50,7 +49,7 @@ class CommitFormatter {
     return action;
   }
 
-  static formmat_create_folder_action(file) {
+  static format_create_folder_action(file) {
     return {
       action: 'create',
       file_path: `${file.path}/${file.name}`,
@@ -58,20 +57,22 @@ class CommitFormatter {
     };
   }
 
-  static formmat_actions(files, action_formmater, options) {
+  static format_actions(files, action_formatter, options) {
     let actions;
     if (files instanceof Array) {
-      actions = files.map(function(file) {
-        return action_formmater(file, options);
-      });
+      actions = [];
+      for (const file of files) {
+        if (file.type === 'tree') { continue; }
+        actions.push(action_formatter(file, options));
+      }
     } else {
-      actions = [ action_formmater(files, options) ];
+      actions = [ action_formatter(files, options) ];
     }
     return actions;
   }
 
   static create_file(files, project_id, options) {
-    const actions = this.formmat_actions(files, this.formmat_create_action, options);
+    const actions = this.format_actions(files, this.format_create_action, options);
     let default_message = `${options.author} create file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} create files`; }
     options.commit_message = options.commit_message || default_message;
@@ -79,7 +80,7 @@ class CommitFormatter {
   }
 
   static update_file(files, project_id, options) {
-    const actions = this.formmat_actions(files, this.format_update_action, options);
+    const actions = this.format_actions(files, this.format_update_action, options);
     let default_message = `${options.author} update file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} update files`; }
     options.commit_message = options.commit_message || default_message;
@@ -87,7 +88,7 @@ class CommitFormatter {
   }
 
   static delete_file(files, project_id, options) {
-    const actions = this.formmat_actions(files, this.formmat_delete_action, options);
+    const actions = this.format_actions(files, this.format_delete_action, options);
     let default_message = `${options.author} delete file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} delete files`; }
     options.commit_message = options.commit_message || default_message;
@@ -95,7 +96,7 @@ class CommitFormatter {
   }
 
   static move_file(files, project_id, options) {
-    const actions = this.formmat_actions(files, this.format_move_action, options);
+    const actions = this.format_actions(files, this.format_move_action, options);
     let default_message =
       `${options.author} move file from ${files.previous_path} to ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} move files`; }
@@ -104,7 +105,7 @@ class CommitFormatter {
   }
 
   static create_folder(folder, project_id, options) {
-    const actions = this.formmat_actions(folder, this.formmat_create_folder_action, options);
+    const actions = this.format_actions(folder, this.format_create_folder_action, options);
     options.commit_message = options.commit_message ||
       `${options.author} create folder ${folder.path}`;
     return this.output(actions, project_id, options);
