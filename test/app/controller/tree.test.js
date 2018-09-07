@@ -50,7 +50,7 @@ before(async () => {
     .send(project);
 });
 
-describe('test/app/controller/file.test.js', () => {
+describe('test/app/controller/tree.test.js', () => {
   it('should get a tree', () => {
     const tree_path = encodeURIComponent('test_tree/test_tree');
     return app.httpRequest()

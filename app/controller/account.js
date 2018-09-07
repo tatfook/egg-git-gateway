@@ -79,7 +79,7 @@ class AccountController extends Controller {
       this.ctx.throw(404, 'User Not Found');
     }
 
-    await this.ctx.model.File
+    await this.ctx.model.Node
       .delete_account(account._id)
       .catch(err => {
         this.ctx.logger.error(err);

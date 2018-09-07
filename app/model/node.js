@@ -10,29 +10,12 @@ const serilize_file = file => JSON.stringify({
 });
 
 const serilize_tree = tree => {
-  const serilized_tree = [];
-  if (tree instanceof Array) {
-    for (const node of tree) {
-      serilized_tree.push(node.path);
-      serilized_tree.push(JSON.stringify(node));
-    }
-  } else {
-    serilized_tree.push(tree.path);
-    serilized_tree.push(JSON.stringify({
-      type: tree.type,
-      name: tree.name,
-      path: tree.path,
-    }));
-  }
-  return serilized_tree;
+  return JSON.stringify(tree);
 };
 
 const deserialize_tree = serilized_tree => {
-  const tree = [];
-  for (const node of serilized_tree) {
-    tree.push(JSON.parse(node));
-  }
-  return tree;
+  console.log(serilized_tree);
+  return JSON.parse(serilized_tree);
 };
 
 module.exports = app => {
@@ -42,7 +25,7 @@ module.exports = app => {
   const logger = app.logger;
   const cache_expire = app.config.cache_expire;
 
-  const FileSchema = new Schema({
+  const NodeSchema = new Schema({
     name: String,
     path: String,
     content: String,
@@ -51,11 +34,11 @@ module.exports = app => {
     account_id: Number,
   }, { timestamps: true });
 
-  FileSchema.index({ project_id: 1, path: 1 });
+  NodeSchema.index({ project_id: 1, path: 1 });
 
-  const statics = FileSchema.statics;
+  const statics = NodeSchema.statics;
 
-  FileSchema.virtual('tree_path').get(function() {
+  NodeSchema.virtual('tree_path').get(function() {
     return statics.get_tree_path(this.path, this.name);
   });
 
@@ -108,14 +91,13 @@ module.exports = app => {
 
   statics.cache_tree = function(project_id, path, tree, pipeline = redis.pipeline()) {
     const key = generate_tree_key(project_id, path);
-    pipeline.hmset(key, serilize_tree(tree));
-    pipeline.expire(key, cache_expire);
+    pipeline.setex(key, cache_expire, serilize_tree(tree));
     return pipeline;
   };
 
   statics.load_tree_cache_by_path = async function(project_id, path) {
     const key = generate_tree_key(project_id, path);
-    const serilized_tree = await redis.hvals(key)
+    const serilized_tree = await redis.get(key)
       .catch(err => {
         logger.error(err);
       });
@@ -223,22 +205,40 @@ module.exports = app => {
       pagination = { skip: 0, limit: 9999999 };
       if (from_cache) {
         tree = await this.load_tree_cache_by_path(project_id, path);
-        if (tree.length > 0) { return tree; }
       }
     }
-    tree = await this.get_tree_by_path_from_db(project_id, path, recursive, pagination);
+    if (empty(tree)) {
+      tree = await this.get_tree_by_path_from_db(project_id, path, recursive, pagination);
+    }
     return tree;
   };
 
-  statics.ensure_parent_exist = async function(project_id, path) {
+  statics.ensure_parent_exist = async function(account_id, project_id, path) {
     const ancestor_names = path.split('/');
-    if (ancestor_names.length <= 3) { return; }
-    const file_name = ancestor_names[ancestor_names.length - 1];
-    const parent_path = this.get_tree_path(path, file_name);
-    const parent = await this.get_by_path(project_id, parent_path);
-    if (empty(parent)) {
-      const errMsg = `Parent folder ${parent_path} not found`;
-      return errMsg;
+    const ancestors_to_create = [];
+    let node_name = ancestor_names[ancestor_names.length - 1];
+    for (let i = ancestor_names.length - 2; i >= 0; i--) {
+      path = this.get_tree_path(path, node_name);
+      node_name = ancestor_names[i];
+      const parent = await this.get_by_path_from_db(project_id, path);
+      if (empty(parent)) {
+        ancestors_to_create.push({
+          name: node_name,
+          type: 'tree',
+          path,
+          project_id,
+          account_id,
+        });
+      } else {
+        break;
+      }
+    }
+    if (ancestors_to_create.length > 0) {
+      await this.create(ancestors_to_create)
+        .catch(err => {
+          logger.error(err);
+          throw err;
+        });
     }
   };
 
@@ -326,7 +326,7 @@ module.exports = app => {
       });
   };
 
-  FileSchema.post('save', async function(file) {
+  NodeSchema.post('save', async function(file) {
     const pipeline = statics.release_cache(file);
     await pipeline.exec()
       .catch(err => {
@@ -335,5 +335,5 @@ module.exports = app => {
       });
   });
 
-  return mongoose.model('File', FileSchema);
+  return mongoose.model('Node', NodeSchema);
 };

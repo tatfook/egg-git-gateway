@@ -132,7 +132,7 @@ class ProjectController extends Controller {
       );
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-    await this.ctx.model.File
+    await this.ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
         this.ctx.logger.error(err);

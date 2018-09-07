@@ -55,7 +55,7 @@ class FileController extends Controller {
     const project = await this.get_readable_project();
     const path = this.ctx.params.path;
     const from_cache = !this.ctx.query.refresh_cache;
-    let file = await this.ctx.model.File
+    let file = await this.ctx.model.Node
       .get_by_path(project._id, path, from_cache)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -85,16 +85,9 @@ class FileController extends Controller {
     this.validate_file_path();
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    await this.throw_if_parent_node_not_exist();
-    let file = await this.ctx.model.File
-      .get_by_path(project._id, path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-
-    this.throw_if_exists(file);
-    file = new this.ctx.model.File({
+    await this.throw_if_node_exist(project._id, path);
+    await this.ensure_parent_exist(project.account_id, project._id, path);
+    const file = new this.ctx.model.Node({
       name: this.get_file_name(path),
       content: this.ctx.request.body.content,
       path,
@@ -142,7 +135,7 @@ class FileController extends Controller {
     this.ctx.validate(update_rule);
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    const file = await this.ctx.model.File
+    const file = await this.ctx.model.Node
       .get_by_path_from_db(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -191,7 +184,7 @@ class FileController extends Controller {
   async remove() {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    const file = await this.ctx.model.File
+    const file = await this.ctx.model.Node
       .get_by_path_from_db(project._id, path)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -210,7 +203,7 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    await this.ctx.model.File
+    await this.ctx.model.Node
       .delete_and_release_cache(file)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -244,8 +237,9 @@ class FileController extends Controller {
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     this.validate_file_path();
     const project = await this.get_writable_project();
-    await this.throw_if_can_not_move(project._id);
-    const file = await this.ctx.model.File
+    await this.throw_if_node_exist(project._id, new_path);
+    await this.ensure_parent_exist(project.account_id, project._id, new_path);
+    const file = await this.ctx.model.Node
       .get_by_path_from_db(project._id, previous_path)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -271,7 +265,7 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    await this.ctx.model.File
+    await this.ctx.model.Node
       .move(file).catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -313,7 +307,7 @@ class FileController extends Controller {
     file = this.filter_file_or_folder(file);
     file.project_id = project._id;
     file.account_id = project.account_id;
-    await this.ctx.model.File.create(file)
+    await this.ctx.model.Node.create(file)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);

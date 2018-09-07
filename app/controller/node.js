@@ -26,12 +26,12 @@ class NodeController extends Controller {
 
   get_file_name(path) {
     path = path || this.ctx.params.path;
-    return this.ctx.model.File.get_file_name(path);
+    return this.ctx.model.Node.get_file_name(path);
   }
 
   get_project_path(path) {
     path = path || this.ctx.params.path;
-    return this.ctx.model.File.get_project_path(path);
+    return this.ctx.model.Node.get_project_path(path);
   }
 
   filter_file_or_folder(file) {
@@ -64,29 +64,25 @@ class NodeController extends Controller {
     if (!empty(file)) { this.ctx.throw(409); }
   }
 
-  async throw_if_can_not_move(project_id) {
-    await this.throw_if_target_file_exist(project_id);
-    await this.throw_if_parent_node_not_exist(project_id);
-  }
-
-  async throw_if_target_file_exist(project_id) {
-    const file_in_target_path = await this.ctx.model.File
-      .get_by_path(project_id, this.ctx.params.path)
+  async throw_if_node_exist(project_id, path) {
+    path = path || this.ctx.params.path;
+    const node = await this.ctx.model.Node
+      .get_by_path(project_id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    this.throw_if_exists(file_in_target_path);
+    this.throw_if_exists(node);
   }
 
-  async throw_if_parent_node_not_exist(project_id) {
-    const errMsg = await this.ctx.model.File
-      .ensure_parent_exist(project_id, this.ctx.params.path)
+  async ensure_parent_exist(account_id, project_id, path) {
+    path = path || this.ctx.params.path;
+    await this.ctx.model.Node
+      .ensure_parent_exist(account_id, project_id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    if (errMsg) { this.ctx.throw(404, errMsg); }
   }
 
   async get_project(project_path) {
