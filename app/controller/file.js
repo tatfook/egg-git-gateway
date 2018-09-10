@@ -84,7 +84,6 @@ class FileController extends Controller {
   */
   async create() {
     this.ctx.validate(create_rule);
-    this.validate_file_path();
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     await this.throw_if_node_exist(project._id, path);
@@ -240,7 +239,6 @@ class FileController extends Controller {
     this.ctx.validate(move_rule);
     const previous_path = this.ctx.params.path;
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
-    this.validate_file_path();
     const project = await this.get_writable_project();
     await this.throw_if_node_exist(project._id, new_path);
     await this.ensure_parent_exist(project.account_id, project._id, new_path);
@@ -297,7 +295,7 @@ class FileController extends Controller {
     }
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
-    let file = await this.service.gitlab
+    const file = await this.service.gitlab
       .load_file(project._id, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -309,7 +307,6 @@ class FileController extends Controller {
     this.throw_if_not_exist(file);
 
     file.path = this.ctx.params.path;
-    file = this.filter_file_or_folder(file);
     file.project_id = project._id;
     file.account_id = project.account_id;
     await this.ctx.model.Node.create(file)
@@ -318,6 +315,25 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
     return file;
+  }
+
+  async migrate() {
+    this.ctx.ensureAdmin();
+    const path = this.ctx.params.path;
+    const project = await this.get_project();
+    await this.throw_if_node_exist(project._id, path);
+    await this.ensure_parent_exist(project.account_id, project._id, path);
+    await this.ctx.model.Node.create({
+      name: this.get_file_name(path),
+      content: this.ctx.request.body.content,
+      path,
+      project_id: project._id,
+      account_id: project.account_id,
+    }).catch(err => {
+      this.ctx.logger.error(err);
+      this.ctx.throw(500);
+    });
+    this.created();
   }
 }
 

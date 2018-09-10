@@ -34,19 +34,6 @@ class NodeController extends Controller {
     return this.ctx.model.Node.get_project_path(path);
   }
 
-  filter_file_or_folder(file) {
-    const is_folder = (file.name === '.gitignore.md' || file.name === '.gitkeep');
-    if (is_folder) {
-      return {
-        name: file.path.match(/[^\/]+$/)[0],
-        type: 'tree',
-        path: file.path.replace(`/${file.name}`, ''),
-      };
-    }
-    file.type = 'blob';
-    return file;
-  }
-
   validate_file_path(path) {
     path = path || this.ctx.params.path;
     const pattern = /\.[^\.]+$/;
@@ -67,7 +54,7 @@ class NodeController extends Controller {
   async throw_if_node_exist(project_id, path) {
     path = path || this.ctx.params.path;
     const node = await this.ctx.model.Node
-      .get_by_path(project_id, path)
+      .get_by_path_from_db(project_id, path)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
