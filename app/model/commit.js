@@ -115,6 +115,7 @@ class CommitFormatter {
 module.exports = app => {
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
+  const logger = app.logger;
 
   const ActionSchema = new Schema({
     action: String,
@@ -138,7 +139,7 @@ module.exports = app => {
     const commit = CommitFormatter.create_file(files, project_id, options);
     return this.create(commit)
       .catch(err => {
-        console.log(`failed to create commit ${commit}`);
+        logger.error(`failed to create commit ${commit}`);
         throw err;
       });
   };
@@ -147,7 +148,7 @@ module.exports = app => {
     const commit = CommitFormatter.update_file(files, project_id, options);
     return this.create(commit)
       .catch(err => {
-        console.log(`failed to create commit ${commit}`);
+        logger.error(`failed to create commit ${commit}`);
         throw err;
       });
   };
@@ -156,7 +157,7 @@ module.exports = app => {
     const commit = CommitFormatter.delete_file(files, project_id, options);
     return this.create(commit)
       .catch(err => {
-        console.log(`failed to create commit ${commit}`);
+        logger.error(`failed to create commit ${commit}`);
         throw err;
       });
   };
@@ -165,7 +166,7 @@ module.exports = app => {
     const commit = CommitFormatter.move_file(files, project_id, options);
     return this.create(commit)
       .catch(err => {
-        console.log(`failed to create commit ${commit}`);
+        logger.error(`failed to create commit ${commit}`);
         throw err;
       });
   };
@@ -174,7 +175,7 @@ module.exports = app => {
     const commit = CommitFormatter.create_folder(folder, project_id, options);
     return this.create(commit)
       .catch(err => {
-        console.log(`failed to create commit ${commit}`);
+        logger.error(`failed to create commit ${commit}`);
         throw err;
       });
   };

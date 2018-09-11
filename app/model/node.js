@@ -14,7 +14,6 @@ const serilize_tree = tree => {
 };
 
 const deserialize_tree = serilized_tree => {
-  console.log(serilized_tree);
   return JSON.parse(serilized_tree);
 };
 
