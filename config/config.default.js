@@ -16,6 +16,10 @@ module.exports = appInfo => {
     white_list: [ '__keepwork__' ],
   };
 
+  config.bodyParser = {
+    jsonLimit: '10mb',
+  };
+
   config.permission = {
     r: 32,
     rw: 64,

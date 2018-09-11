@@ -38,6 +38,10 @@ class ErrorHandler {
       error: 'An unknown error happened',
     };
   }
+
+  static PayloadTooLargeError(err, ctx) {
+    ctx.body = { error: 'This request is too large' };
+  }
 }
 
 module.exports = {
