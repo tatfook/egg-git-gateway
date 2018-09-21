@@ -230,8 +230,7 @@ class FileController extends Controller {
   * @apiPermission authorized user
   *
   * @apiParam {String} encoded_project_path Urlencoded encoded_project_path such as 'username%2Fsitename'
-  * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
-  * Such as 'username%2Fsitename%2Fprevious%2Findex.md'
+  * @apiParam {String} encoded_path Urlencoded tree path such as 'username%2Fsitename%2Fprevious%2Findex.md'
   * @apiParam {String} new_path New path of the file such as 'username/sitename/new/index.md'
   * @apiParam {String} [content] Content of the file
   */
@@ -240,8 +239,6 @@ class FileController extends Controller {
     const previous_path = this.ctx.params.path;
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     const project = await this.get_writable_project();
-    await this.throw_if_node_exist(project._id, new_path);
-    await this.ensure_parent_exist(project.account_id, project._id, new_path);
     const file = await this.ctx.model.Node
       .get_by_path_from_db(project._id, previous_path)
       .catch(err => {
@@ -249,6 +246,8 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
     this.throw_if_not_exist(file);
+    await this.throw_if_node_exist(project._id, new_path);
+    await this.ensure_parent_exist(project.account_id, project._id, new_path);
 
     const content = this.ctx.request.body.content;
     if (content) { file.content = content; }

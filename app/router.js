@@ -30,5 +30,6 @@ module.exports = app => {
   router.del('/projects/:project_path/files/:path', controller.file.remove);
 
   router.post('/projects/:project_path/folders/:path', controller.folder.create);
+  router.put('/projects/:project_path/folders/:path/move', controller.folder.move);
   router.del('/projects/:project_path/folders/:path', controller.folder.remove);
 };

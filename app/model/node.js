@@ -241,9 +241,9 @@ module.exports = app => {
     }
   };
 
-  statics.get_sub_files_by_path = async function(tree_path, pattern, get_self = true) {
+  statics.get_subfiles_by_path = async function(tree_path, pattern, get_self = true) {
     if (!pattern) { pattern = new RegExp(`^${tree_path}/.*`, 'u'); }
-    const sub_files = await this.find({ path: pattern })
+    const subfiles = await this.find({ path: pattern })
       .limit(999999)
       .catch(err => {
         logger.error(err);
@@ -256,25 +256,25 @@ module.exports = app => {
           logger.error(err);
           throw err;
         });
-      sub_files.push(folder);
+      subfiles.push(folder);
     }
-    return sub_files;
+    return subfiles;
   };
 
-  statics.delete_sub_files_and_release_cache =
-  async function(project_id, tree_path, sub_files, remove_self = true) {
+  statics.delete_subfiles_and_release_cache =
+  async function(project_id, tree_path, subfiles, remove_self = true) {
     const pattern = new RegExp(`^${tree_path}/.*`, 'u');
-    if (!sub_files) {
-      sub_files = await this.get_sub_files_by_path(project_id, tree_path, pattern, remove_self)
+    if (!subfiles) {
+      subfiles = await this.get_subfiles_by_path(project_id, tree_path, pattern, remove_self)
         .catch(err => {
           logger.error(err);
           throw err;
         });
     }
 
-    if (empty(sub_files)) { return; }
+    if (empty(subfiles)) { return; }
 
-    const pipeline = this.release_multi_files_cache(sub_files);
+    const pipeline = this.release_multi_files_cache(subfiles);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);
@@ -288,7 +288,7 @@ module.exports = app => {
       });
 
     if (remove_self) {
-      const folder = sub_files[sub_files.length - 1];
+      const folder = subfiles[subfiles.length - 1];
       if (!empty(folder)) {
         await folder.remove()
           .catch(err => {
