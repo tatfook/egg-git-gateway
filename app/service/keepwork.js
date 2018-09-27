@@ -10,7 +10,7 @@ class KeepworkService extends Service {
     if (!Client) {
       const KEEPWORK_CONFIG = this.config.keepwork;
       Client = Axios.create({
-        baseURL: KEEPWORK_CONFIG.baseURL,
+        baseURL: KEEPWORK_CONFIG.url,
         timeout: 3 * 1000,
       });
     }

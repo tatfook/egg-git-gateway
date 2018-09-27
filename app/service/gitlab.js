@@ -11,7 +11,7 @@ class GitlabService extends Service {
     if (!Client) {
       const GITLAB_CONFIG = this.config.gitlab;
       Client = Axios.create({
-        baseURL: `${GITLAB_CONFIG.url}/api/v4`,
+        baseURL: GITLAB_CONFIG.url,
         headers: { 'private-token': GITLAB_CONFIG.admin_token },
         timeout: 30 * 1000,
       });
