@@ -17,13 +17,14 @@ class KeepworkService extends Service {
     return Client;
   }
 
-  async ensurePermission(user_id, site_id, type) {
+  async ensurePermission(token, site_id, type) {
     try {
       const permission = this.config.permission[type];
       const res = await this.client.get(
-        `/sites/${site_id}/getSiteMemberLevel?memberId=${user_id}`
+        `/sites/${site_id}/privilege`,
+        { headers: { Authorization: token } }
       );
-      if (res.data.data >= permission) { return true; }
+      if (res.data >= permission) { return true; }
       return false;
     } catch (err) {
       this.app.logger.error(err);

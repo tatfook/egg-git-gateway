@@ -16,8 +16,9 @@ module.exports = {
     } else if (!this.state.user.userId || !this.state.user.username) {
       errMsg = 'Invalid token';
     } else {
-      const permitted = await this.service.keepwork.ensurePermission(
-        this.state.user.userId, site_id, type);
+      const token = this.request.header.authorization;
+      const permitted = await this.service.keepwork
+        .ensurePermission(token, site_id, type);
       if (!permitted) {
         errMsg = 'Not allowed to access this protected resource';
       }
