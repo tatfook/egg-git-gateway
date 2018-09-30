@@ -5,7 +5,7 @@ const { empty } = require('../lib/helper');
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
-  content: { type: 'string', required: false },
+  content: { type: 'string', required: false, allowEmpty: true },
   commit_message: { type: 'string', required: false },
   encoding: {
     type: 'enum',
@@ -17,7 +17,7 @@ const create_rule = {
 
 const update_rule = {
   branch: { type: 'string', default: 'master', required: false },
-  content: 'string',
+  content: { type: 'string', allowEmpty: true },
   commit_message: { type: 'string', required: false },
   encoding: {
     type: 'enum',
@@ -30,7 +30,7 @@ const update_rule = {
 const move_rule = {
   new_path: 'string',
   branch: { type: 'string', default: 'master', required: false },
-  content: { type: 'string', required: false },
+  content: { type: 'string', required: false, allowEmpty: true },
   commit_message: { type: 'string', required: false },
   encoding: {
     type: 'enum',

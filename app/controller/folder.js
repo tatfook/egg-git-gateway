@@ -146,6 +146,8 @@ class FolderController extends Controller {
 
     folder.path = new_path;
     folder.previous_path = previous_path;
+    folder.name = this.get_file_name();
+
     const subfiles = await this.ctx.model.Node
       .get_subfiles_by_path(previous_path, null, false)
       .catch(err => {

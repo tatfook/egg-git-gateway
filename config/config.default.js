@@ -30,6 +30,12 @@ module.exports = appInfo => {
     dir: path.join(appInfo.baseDir, 'app/doc'),
   };
 
+  config.security = {
+    csrf: {
+      enable: false,
+    },
+  };
+
   config.cors = {
     origin: '*',
     allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
