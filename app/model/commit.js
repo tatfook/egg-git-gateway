@@ -38,22 +38,12 @@ class CommitFormatter {
   }
 
   static format_move_action(file, options) {
-    const action = {
+    return {
       action: 'move',
       file_path: file.path,
       previous_path: file.previous_path,
       encoding: options.encoding || 'text',
-    };
-
-    if (file.content) { action.content = file.content; }
-    return action;
-  }
-
-  static format_create_folder_action(file) {
-    return {
-      action: 'create',
-      file_path: `${file.path}/${file.name}`,
-      content: '',
+      content: file.content,
     };
   }
 
@@ -101,13 +91,6 @@ class CommitFormatter {
       `${options.author} move file from ${files.previous_path} to ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} move files`; }
     options.commit_message = options.commit_message || default_message;
-    return this.output(actions, project_id, options);
-  }
-
-  static create_folder(folder, project_id, options) {
-    const actions = this.format_actions(folder, this.format_create_folder_action, options);
-    options.commit_message = options.commit_message ||
-      `${options.author} create folder ${folder.path}`;
     return this.output(actions, project_id, options);
   }
 }
@@ -164,15 +147,6 @@ module.exports = app => {
 
   statics.move_file = function(files, project_id, options) {
     const commit = CommitFormatter.move_file(files, project_id, options);
-    return this.create(commit)
-      .catch(err => {
-        logger.error(`failed to create commit ${commit}`);
-        throw err;
-      });
-  };
-
-  statics.create_folder = function(folder, project_id, options) {
-    const commit = CommitFormatter.create_folder(folder, project_id, options);
     return this.create(commit)
       .catch(err => {
         logger.error(`failed to create commit ${commit}`);
