@@ -25,7 +25,6 @@ module.exports = {
     }
 
     if (errMsg) { this.throw(401, errMsg); }
-    this.user = this.state.user;
   },
   ensureAdmin() {
     const errMsg = 'Page not found';
@@ -33,6 +32,5 @@ module.exports = {
     this.state.user = this.state.user || {};
     const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
     if (not_permitted) { this.throw(404, errMsg); }
-    this.user = this.state.user;
   },
 };

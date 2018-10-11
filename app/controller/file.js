@@ -99,7 +99,7 @@ class FileController extends Controller {
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       encoding: this.ctx.request.body.encoding,
-      author: this.ctx.user.username,
+      author: this.ctx.state.user.username,
     };
     const commit = await this.ctx.model.Commit
       .create_file(file, project._id, commit_options)
@@ -151,7 +151,7 @@ class FileController extends Controller {
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       encoding: this.ctx.request.body.encoding,
-      author: this.ctx.user.username,
+      author: this.ctx.state.user.username,
     };
     const commit = await this.ctx.model.Commit
       .update_file(file, project._id, commit_options)
@@ -197,7 +197,7 @@ class FileController extends Controller {
 
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
-      author: this.ctx.user.username,
+      author: this.ctx.state.user.username,
     };
     const commit = await this.ctx.model.Commit
       .delete_file(file, project._id, commit_options)
@@ -258,7 +258,7 @@ class FileController extends Controller {
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       encoding: this.ctx.request.body.encoding,
-      author: this.ctx.user.username,
+      author: this.ctx.state.user.username,
     };
     const commit = await this.ctx.model.Commit
       .move_file(file, project._id, commit_options)

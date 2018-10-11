@@ -91,8 +91,8 @@ class FolderController extends Controller {
 
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message ||
-        `${this.ctx.user.username} delete folder ${folder.path}`,
-      author: this.ctx.user.username,
+        `${this.ctx.state.user.username} delete folder ${folder.path}`,
+      author: this.ctx.state.user.username,
     };
 
     const commit = await this.ctx.model.Commit
@@ -165,7 +165,7 @@ class FolderController extends Controller {
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       encoding: this.ctx.request.body.encoding,
-      author: this.ctx.user.username,
+      author: this.ctx.state.user.username,
     };
     const commit = await this.ctx.model.Commit
       .move_file(subfiles, project._id, commit_options)

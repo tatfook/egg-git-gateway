@@ -51,6 +51,10 @@ class NodeController extends Controller {
     if (!empty(file)) { this.ctx.throw(409); }
   }
 
+  own_this_project(username, project_path) {
+    return project_path.startsWith(`${username}/`);
+  }
+
   async throw_if_node_exist(project_id, path) {
     path = path || this.ctx.params.path;
     const node = await this.ctx.model.Node
@@ -85,6 +89,7 @@ class NodeController extends Controller {
   }
 
   async get_readable_project(project_path) {
+    project_path = project_path || this.ctx.params.project_path;
     const project = await this.get_project(project_path);
     const white_list = this.config.file.white_list;
     const must_ensure = (!(white_list.includes(project.sitename)))
@@ -96,10 +101,14 @@ class NodeController extends Controller {
   }
 
   async get_writable_project(project_path) {
+    project_path = project_path || this.ctx.params.project_path;
     const project = await this.get_project(project_path);
-    await this.ctx.ensurePermission(project.site_id, 'rw');
+    if (!this.own_this_project(this.ctx.state.user.username, project_path)) {
+      await this.ctx.ensurePermission(project.site_id, 'rw');
+    }
     return project;
   }
+
 }
 
 module.exports = NodeController;
