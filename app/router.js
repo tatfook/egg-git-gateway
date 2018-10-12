@@ -3,12 +3,16 @@
 /**
  * @param {Egg.Application} app - egg application
  */
+
+const auth = require('./middleware/auth');
+
 module.exports = app => {
   const { router, controller } = app;
   const url_prefix = app.config.url_prefix;
   if (url_prefix) { router.prefix(url_prefix); }
 
-  router.use(app.jwt);
+  // router.use(app.jwt);
+  router.use(auth(app.config.jwt));
 
   router.get('home', '/', controller.home.index);
 
