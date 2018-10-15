@@ -7,7 +7,7 @@ module.exports = appInfo => {
   const config = exports = {};
 
   // add your config here
-  config.middleware = [];
+  config.middleware = [ 'jwt' ];
 
   // error handler
   config.onerror = error_handler;
