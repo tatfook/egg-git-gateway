@@ -63,6 +63,41 @@ class GitlabService extends Service {
       });
   }
 
+  async get_token(account_id) {
+    let token = await this.get_active_token(account_id);
+    if (!token) { token = await this.create_token(account_id); }
+    return token;
+  }
+
+  async get_active_token(account_id) {
+    assert(account_id);
+    const res = await this.client
+      .get(`/users/${account_id}/impersonation_tokens?state=active`)
+      .catch(err => {
+        this.app.logger.error(`failed to get token of git account ${account_id}`);
+        this.app.logger.error(err);
+        throw err;
+      });
+    for (const item of res.data) {
+      if (item.name === 'keepwork') { return item.token; }
+    }
+  }
+
+  async create_token(account_id) {
+    assert(account_id);
+    const res = await this.client
+      .post(`/users/${account_id}/impersonation_tokens`, {
+        name: 'keepwork',
+        expires_at: '2222-12-12',
+        scopes: [ 'api', 'read_user' ],
+      }).catch(err => {
+        this.app.logger.error(`failed to create token of git account ${account_id}`);
+        this.app.logger.error(err);
+        throw err;
+      });
+    return res.data.token;
+  }
+
   // project
   serialize_new_project(project) {
     return {

@@ -14,6 +14,26 @@ const update_visibility_rule = {
 };
 
 class ProjectController extends Controller {
+  async show() {
+    const project_path = this.ctx.params.project_path;
+    const project = await this.get_writable_project(project_path);
+    const account = await this.get_account(project.account_id);
+    if (!account.token) {
+      const token = await this.service.gitlab.get_token(account._id);
+      account.token = token;
+      await account.save().catch(err => {
+        const errMsg = 'Failed to get token';
+        this.ctx.logger.error(err);
+        this.ctx.throw(err.response.status, errMsg);
+      });
+    }
+    project.token = account.token;
+    project.createdAt = undefined;
+    project.updatedAt = undefined;
+    project.__v = undefined;
+    this.ctx.body = project;
+  }
+
   /**
  * @api {post} /projects/user/:username create
  * @apiName CreateProject
@@ -170,6 +190,11 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
       });
   }
+
+  own_this_project(username, project_path) {
+    return project_path.startsWith(`${username}/`);
+  }
+
 }
 
 module.exports = ProjectController;

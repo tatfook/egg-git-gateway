@@ -16,21 +16,21 @@ module.exports = {
     } else if (!this.state.user.userId || !this.state.user.username) {
       errMsg = 'Invalid token';
     } else {
-      const token = this.request.header.authorization;
+      if (isAdmin(this.state.user)) { return; }
+      const token = this.headers.authorization;
       const permitted = await this.service.keepwork
         .ensurePermission(token, site_id, type);
       if (!permitted) {
         errMsg = 'Not allowed to access this protected resource';
       }
     }
-
     if (errMsg) { this.throw(401, errMsg); }
   },
   ensureAdmin() {
-    const errMsg = 'Page not found';
+    const errMsg = 'Not allowed to access this protected resource';
     this.state = this.state || {};
     this.state.user = this.state.user || {};
     const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
-    if (not_permitted) { this.throw(404, errMsg); }
+    if (not_permitted) { this.throw(401, errMsg); }
   },
 };

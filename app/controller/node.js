@@ -51,10 +51,6 @@ class NodeController extends Controller {
     if (!empty(file)) { this.ctx.throw(409); }
   }
 
-  own_this_project(username, project_path) {
-    return project_path.startsWith(`${username}/`);
-  }
-
   async throw_if_node_exist(project_id, path) {
     path = path || this.ctx.params.path;
     const node = await this.ctx.model.Node
@@ -74,39 +70,6 @@ class NodeController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-  }
-
-  async get_project(project_path) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.ctx.model.Project
-      .get_by_path(project_path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
-    return project;
-  }
-
-  async get_readable_project(project_path) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.get_project(project_path);
-    const white_list = this.config.file.white_list;
-    const must_ensure = (!(white_list.includes(project.sitename)))
-      && (project.visibility === 'private');
-    if (must_ensure) {
-      await this.ctx.ensurePermission(project.site_id, 'r');
-    }
-    return project;
-  }
-
-  async get_writable_project(project_path) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.get_project(project_path);
-    if (!this.own_this_project(this.ctx.state.user.username, project_path)) {
-      await this.ctx.ensurePermission(project.site_id, 'rw');
-    }
-    return project;
   }
 
 }
