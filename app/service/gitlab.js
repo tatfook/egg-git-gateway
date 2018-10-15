@@ -5,6 +5,7 @@ const Axios = require('axios');
 const assert = require('assert');
 
 let Client;
+let Raw_Client;
 
 class GitlabService extends Service {
   get client() {
@@ -17,6 +18,18 @@ class GitlabService extends Service {
       });
     }
     return Client;
+  }
+
+  get raw_client() {
+    if (!Raw_Client) {
+      const GITLAB_CONFIG = this.config.gitlab;
+      Raw_Client = Axios.create({
+        baseURL: GITLAB_CONFIG.raw_url,
+        headers: { 'private-token': GITLAB_CONFIG.admin_token },
+        timeout: 30 * 1000,
+      });
+    }
+    return Raw_Client;
   }
 
   // account
@@ -214,6 +227,20 @@ class GitlabService extends Service {
         throw err;
       });
     return this.serialized_loaded_file(res.data);
+  }
+
+  async load_raw_file(git_path, file_path) {
+    assert(git_path);
+    assert(file_path);
+    file_path = encodeURIComponent(file_path);
+    const res = await this.raw_client
+      .get(`/${git_path}/raw/master/${encodeURIComponent(file_path)}`)
+      .catch(err => {
+        this.app.logger.error(`failed to get file ${file_path} of project ${git_path}`);
+        this.app.logger.error(err);
+        throw err;
+      });
+    return { content: res.data };
   }
 }
 

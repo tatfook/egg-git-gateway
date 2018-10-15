@@ -293,19 +293,19 @@ class FileController extends Controller {
       project = await this.get_project();
     }
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
-
     const file = await this.service.gitlab
-      .load_file(project._id, this.ctx.params.path)
+      .load_raw_file(project.git_path, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
-        if (err.response.status === 404) {
-          this.throw_if_not_exist(null);
-        }
+        // if (err.response.status === 404) {
+        //   this.throw_if_not_exist(null);
+        // }
         this.ctx.throw(500);
       });
     this.throw_if_not_exist(file);
 
     file.path = this.ctx.params.path;
+    file.name = this.get_file_name(file.path);
     file.project_id = project._id;
     file.account_id = project.account_id;
     await this.ctx.model.Node.create(file)
