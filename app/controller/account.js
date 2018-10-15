@@ -23,6 +23,31 @@ class AccountController extends Controller {
   * @apiParam {String} username Username of the user
   * @apiParam {String{ > 6 }} password Password of the gitlab account
   */
+  async show() {
+    this.ctx.veryfy();
+    const kw_username = this.ctx.state.user.username;
+    const account = await this.ctx.model.Account
+      .get_by_kw_username(kw_username)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(err.response.status);
+      });
+    if (!account) { this.ctx.throw(404, 'Account not found'); }
+    if (!account.token) {
+      account.token = await this.service.gitlab.get_token(account._id);
+      await account.save().catch(err => {
+        const errMsg = 'Failed to get token';
+        this.ctx.logger.error(err);
+        this.ctx.throw(err.response.status, errMsg);
+      });
+    }
+    this.ctx.body = {
+      git_id: account._id,
+      git_username: account.name,
+      token: account.token,
+    };
+  }
+
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
