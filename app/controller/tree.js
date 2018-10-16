@@ -32,6 +32,21 @@ class TreeController extends Controller {
       );
     this.ctx.body = tree;
   }
+
+  async root() {
+    const from_cache = !this.ctx.query.refresh_cache;
+    const recursive = this.ctx.query.recursive;
+    const project = await this.get_project(this.ctx.params.project_path);
+    const tree = await this.ctx.model.Node
+      .get_tree_by_path(
+        project._id,
+        null,
+        from_cache,
+        recursive,
+        paginate(this.ctx.query)
+      );
+    this.ctx.body = tree;
+  }
 }
 
 module.exports = TreeController;

@@ -234,7 +234,7 @@ class GitlabService extends Service {
     assert(file_path);
     file_path = encodeURIComponent(file_path);
     const res = await this.raw_client
-      .get(`/${git_path}/raw/master/${encodeURIComponent(file_path)}`)
+      .get(`/${git_path}/raw/master/${file_path}`)
       .catch(err => {
         this.app.logger.error(`failed to get file ${file_path} of project ${git_path}`);
         this.app.logger.error(err);

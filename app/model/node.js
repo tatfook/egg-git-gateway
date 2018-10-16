@@ -179,8 +179,14 @@ module.exports = app => {
 
   statics.get_tree_by_path_from_db = async function(
     project_id, path, recursive = false, pagination) {
-    const path_pattern = recursive ? `^${path}\/` : `^${path}\/[^\/]+$`;
-    const query_condition = { project_id, path: new RegExp(path_pattern, 'u') };
+    let query_condition;
+    if (path) {
+      const path_pattern = recursive ? `^${path}\/` : `^${path}\/[^\/]+$`;
+      query_condition = { project_id, path: new RegExp(path_pattern, 'u') };
+    } else {
+      query_condition = { project_id };
+    }
+
     const selected_fields = 'name path type -_id';
     const tree = await this.find(query_condition, selected_fields)
       .skip(pagination.skip)

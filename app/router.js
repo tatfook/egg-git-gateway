@@ -20,6 +20,7 @@ module.exports = app => {
   router.del('/projects/:path', controller.project.remove);
 
   router.get('/projects/:project_path/tree/:path', controller.tree.show);
+  router.get('/projects/:project_path/tree/', controller.tree.root);
 
   router.get('/projects/:project_path/files/:path', controller.file.show);
   router.post('/projects/:project_path/files/:path', controller.file.create);
