@@ -18,6 +18,7 @@ module.exports = app => {
   router.post('/projects/user/:kw_username', controller.project.create);
   router.put('/projects/:path/visibility', controller.project.update_visibility);
   router.del('/projects/:path', controller.project.remove);
+  router.get('/projects/:path/exist', controller.project.exist);
 
   router.get('/projects/:project_path/tree/:path', controller.tree.show);
   router.get('/projects/:project_path/tree/', controller.tree.root);

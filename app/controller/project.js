@@ -14,6 +14,17 @@ const update_visibility_rule = {
 };
 
 class ProjectController extends Controller {
+  async exist() {
+    this.ctx.ensureAdmin();
+    const project = await this.ctx.model.Project
+      .get_by_path_from_db(this.ctx.params.path);
+    if (empty(project)) {
+      this.ctx.body = 0;
+    } else {
+      this.ctx.body = 1;
+    }
+  }
+
   /**
  * @api {post} /projects/user/:username create
  * @apiName CreateProject
@@ -126,10 +137,7 @@ class ProjectController extends Controller {
   async remove() {
     this.ctx.ensureAdmin();
     const project = await this.ctx.model.Project
-      .get_by_path(
-        this.ctx.params.path,
-        false
-      );
+      .get_by_path_from_db(this.ctx.params.path);
     if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
 
     await this.ctx.model.Node
