@@ -13,11 +13,11 @@ const create_rule = {
 
 class AccountController extends Controller {
   /**
-  * @api {post} /accounts create
-  * @apiName CreateAccount
+  * @api {get} /accounts get account
+  * @apiName ShowAccount
   * @apiGroup Account
-  * @apiDescription To create a git account for a new keepwork user
-  * @apiPermission admin
+  * @apiDescription To get the information of an account
+  * @apiPermission authorized user
   *
   * @apiParam {Number} id keepwork user id
   * @apiParam {String} username Username of the user
@@ -48,6 +48,17 @@ class AccountController extends Controller {
     };
   }
 
+  /**
+  * @api {post} /accounts create
+  * @apiName CreateAccount
+  * @apiGroup Account
+  * @apiDescription To create a git account for a new keepwork user
+  * @apiPermission admin
+  *
+  * @apiParam {Number} id keepwork user id
+  * @apiParam {String} username Username of the user
+  * @apiParam {String{ > 6 }} password Password of the gitlab account
+  */
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);

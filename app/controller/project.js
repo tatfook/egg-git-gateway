@@ -14,6 +14,15 @@ const update_visibility_rule = {
 };
 
 class ProjectController extends Controller {
+  /**
+ * @api {get} /projects/:encoded_path/exist check existence
+ * @apiName exist
+ * @apiGroup Project
+ * @apiDescription To check the existence of a project
+ * @apiPermission admin
+ *
+ * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
+ */
   async exist() {
     this.ctx.ensureAdmin();
     const project = await this.ctx.model.Project
