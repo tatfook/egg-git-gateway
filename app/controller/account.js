@@ -83,13 +83,6 @@ class AccountController extends Controller {
       this.ctx.logger.error(err);
       throw err;
     });
-
-    const es_message = {
-      action: 'create_user',
-      user_id: this.ctx.request.body.id,
-    };
-    await this.send_message(account._id, es_message);
-
     this.created();
   }
 
@@ -141,13 +134,6 @@ class AccountController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-
-    const es_message = {
-      action: 'remove_user',
-      username: account.kw_username,
-    };
-    await this.send_message(account._id, es_message);
-
     this.deleted();
   }
 

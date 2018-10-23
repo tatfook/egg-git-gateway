@@ -78,16 +78,6 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-
-    if (project.site_id) {
-      const es_message = {
-        action: 'create_site',
-        site_id: project.site_id,
-        username: account.username,
-      };
-      await this.send_message(project._id, es_message);
-    }
-
     this.created();
   }
 
@@ -120,13 +110,6 @@ class ProjectController extends Controller {
       this.ctx.logger.error(err);
       this.ctx.throw(500);
     });
-
-    const es_message = {
-      action: 'update_site_visibility',
-      path: project.path,
-      visibility: project.visibility,
-    };
-    await this.send_message(project._id, es_message);
 
     this.ctx.body = {
       site_id: project.site_id,
@@ -169,13 +152,6 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-
-    const es_message = {
-      action: 'remove_site',
-      path: project.path,
-    };
-    await this.send_message(project._id, es_message);
-
     this.deleted();
   }
 
