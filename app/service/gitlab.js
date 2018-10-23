@@ -51,18 +51,37 @@ class GitlabService extends Service {
     };
   }
 
+  async get_account(username) {
+    const res = await this.client
+      .get(`/users?username=${username}`)
+      .catch(err => {
+        this.app.logger.error(`failed to get git account ${username}`);
+        this.app.logger.error(err);
+        throw err;
+      });
+    if (res.data.length > 0) { return res.data[0]; }
+  }
+
   async create_account(user) {
     assert(user.username);
     assert(user.password);
+    let registered_account;
     const account = this.serialize_new_account(user);
-    const res = await this.client
+    await this.client
       .post('/users', account)
-      .catch(err => {
+      .then(res => {
+        registered_account = res.data;
+      })
+      .catch(async err => {
+        if (err.response.status === 409) {
+          registered_account = await this.get_account(user.username);
+          return;
+        }
         this.app.logger.error(`failed to create git account for ${user.username}`);
         this.app.logger.error(err);
         throw err;
       });
-    return this.serialize_loaded_account(res.data);
+    return this.serialize_loaded_account(registered_account);
   }
 
   async delete_account(account_id) {
