@@ -27,7 +27,7 @@ class AccountController extends Controller {
     this.ctx.veryfy();
     const kw_username = this.ctx.state.user.username;
     const account = await this.ctx.model.Account
-      .get_by_kw_username(kw_username)
+      .get_by_kw_username_from_db(kw_username)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);

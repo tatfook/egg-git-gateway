@@ -57,7 +57,12 @@ module.exports = app => {
     }
 
     // load from db
-    account = await this.findOne({ kw_username })
+    account = await this.get_by_kw_username_from_db(kw_username);
+    return account;
+  };
+
+  statics.get_by_kw_username_from_db = async function(kw_username) {
+    const account = await this.findOne({ kw_username })
       .catch(err => { logger.error(err); });
     if (!empty(account)) {
       await this.cache(account);
