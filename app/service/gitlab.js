@@ -251,7 +251,6 @@ class GitlabService extends Service {
   async load_raw_file(git_path, file_path) {
     assert(git_path);
     assert(file_path);
-    file_path = encodeURIComponent(file_path);
     const res = await this.raw_client
       .get(`/${git_path}/raw/master/${file_path}`)
       .catch(err => {
@@ -259,6 +258,7 @@ class GitlabService extends Service {
         this.app.logger.error(err);
         throw err;
       });
+    if (file_path.endsWith('.json')) { res.data = JSON.stringify(res.data); }
     return { content: res.data };
   }
 }
