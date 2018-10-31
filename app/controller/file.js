@@ -297,9 +297,9 @@ class FileController extends Controller {
       .load_raw_file(project.git_path, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
-        // if (err.response.status === 404) {
-        //   this.throw_if_not_exist(null);
-        // }
+        if (err.response.status === 404) {
+          this.throw_if_not_exist(null);
+        }
         this.ctx.throw(500);
       });
     this.throw_if_not_exist(file);
