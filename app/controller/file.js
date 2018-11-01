@@ -298,11 +298,10 @@ class FileController extends Controller {
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {
-          this.throw_if_not_exist(null);
+          this.throw_if_not_exist();
         }
         this.ctx.throw(500);
       });
-    this.throw_if_not_exist(file);
 
     file.path = this.ctx.params.path;
     file.name = this.get_file_name(file.path);
