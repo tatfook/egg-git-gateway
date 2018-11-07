@@ -25,6 +25,7 @@ module.exports = app => {
 
   router.get('/projects/:project_path/files/:path', controller.file.show);
   router.post('/projects/:project_path/files/:path', controller.file.create);
+  router.post('/projects/:project_path/files', controller.file.create_many);
   router.post('/projects/:project_path/files/:path/migrate', controller.file.migrate);
   router.put('/projects/:project_path/files/:path', controller.file.update);
   router.put('/projects/:project_path/files/:path/move', controller.file.move);

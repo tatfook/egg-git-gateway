@@ -47,8 +47,8 @@ class NodeController extends Controller {
     if (file.type !== type) { this.ctx.throw(404, errMsg); }
   }
 
-  throw_if_exists(file) {
-    if (!empty(file)) { this.ctx.throw(409); }
+  throw_if_exists(file, message) {
+    if (!empty(file)) { this.ctx.throw(409, message); }
   }
 
   async throw_if_node_exist(project_id, path) {
@@ -62,6 +62,18 @@ class NodeController extends Controller {
     this.throw_if_exists(node);
   }
 
+  async throw_if_nodes_exist(project_id, files) {
+    for (const file of files) {
+      const node = await this.ctx.model.Node
+        .get_by_path_from_db(project_id, file.path)
+        .catch(err => {
+          this.ctx.logger.error(err);
+          this.ctx.throw(500);
+        });
+      if (!empty(node)) { this.ctx.throw(409, `${file.path} already exists`); }
+    }
+  }
+
   async ensure_parent_exist(account_id, project_id, path) {
     path = path || this.ctx.params.path;
     await this.ctx.model.Node
@@ -72,6 +84,18 @@ class NodeController extends Controller {
       });
   }
 
+  async ensure_parents_exist(account_id, project_id, files) {
+    const tasks = [];
+    for (const file of files) {
+      tasks.push(
+        this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path)
+      );
+    }
+    await Promise.all(tasks).catch(errs => {
+      this.ctx.logger.error(errs);
+      this.ctx.throw(500);
+    });
+  }
 }
 
 module.exports = NodeController;

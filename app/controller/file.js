@@ -15,6 +15,25 @@ const create_rule = {
   },
 };
 
+const create_many_rule = {
+  branch: { type: 'string', default: 'master', required: false },
+  files: {
+    type: 'array',
+    itemType: 'object',
+    rule: {
+      path: 'string',
+      content: { type: 'string', required: false, allowEmpty: true },
+    },
+  },
+  commit_message: { type: 'string', required: false },
+  encoding: {
+    type: 'enum',
+    values: [ 'text', 'base64' ],
+    default: 'text',
+    required: false,
+  },
+};
+
 const update_rule = {
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', allowEmpty: true },
@@ -119,6 +138,39 @@ class FileController extends Controller {
     };
 
     await this.send_message(commit._id, project._id, es_message);
+    this.created();
+  }
+
+  async create_many() {
+    this.ctx.validate(create_many_rule);
+    const project = await this.get_writable_project();
+    const files = this.ctx.request.body.files;
+    await this.throw_if_nodes_exist(project._id, files);
+    await this.ensure_parents_exist(project.account_id, project._id, files);
+    for (const file of files) {
+      file.name = this.get_file_name(file.path);
+      file.project_id = project._id;
+      file.account_id = project.account_id;
+    }
+    const commit_options = {
+      commit_message: this.ctx.request.body.commit_message,
+      encoding: this.ctx.request.body.encoding,
+      author: this.ctx.state.user.username,
+    };
+    const commit = await this.ctx.model.Commit
+      .create_file(files, project._id, commit_options)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    await this.ctx.model.Node
+      .create(files)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+
+    await this.send_message(commit._id, project._id);
     this.created();
   }
 

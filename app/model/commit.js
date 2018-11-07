@@ -110,7 +110,7 @@ module.exports = app => {
 
   const CommitSchema = new Schema({
     branch: { type: String, default: 'master' },
-    id: String, // URL-encoded project git_path or project_id
+    id: String,
     actions: [ ActionSchema ],
     commit_message: String,
     author_name: String,
