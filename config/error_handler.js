@@ -3,10 +3,9 @@
 class ErrorHandler {
   static handle(err, ctx) {
     try {
-      console.log(err.name);
+      ctx.logger.error(err);
       this[err.name](err, ctx);
     } catch (handlerNotFoundError) {
-      console.log(handlerNotFoundError);
       this.InternalServerError(err, ctx);
     }
   }
