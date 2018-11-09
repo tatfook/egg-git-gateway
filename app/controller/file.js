@@ -145,6 +145,7 @@ class FileController extends Controller {
     this.ctx.validate(create_many_rule);
     const project = await this.get_writable_project();
     const files = this.ctx.request.body.files;
+    this.ensure_unique(files);
     await this.throw_if_nodes_exist(project._id, files);
     await this.ensure_parents_exist(project.account_id, project._id, files);
     for (const file of files) {

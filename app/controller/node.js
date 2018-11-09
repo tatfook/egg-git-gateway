@@ -51,6 +51,15 @@ class NodeController extends Controller {
     if (!empty(file)) { this.ctx.throw(409, message); }
   }
 
+  ensure_unique(files) {
+    const exist_paths = {};
+    const errMsg = 'Reduplicative files exist in your request';
+    for (const file of files) {
+      if (exist_paths[file.path]) { this.ctx.throw(409, errMsg); }
+      exist_paths[file.path] = true;
+    }
+  }
+
   async throw_if_node_exist(project_id, path) {
     path = path || this.ctx.params.path;
     const node = await this.ctx.model.Node

@@ -20,7 +20,7 @@ class ErrorHandler {
   }
 
   static ConflictError(err, ctx) {
-    ctx.body = { error: 'Already exists' || err.message };
+    ctx.body = { error: err.message || 'Already exists' };
   }
 
   static UnauthorizedError(err, ctx) {
