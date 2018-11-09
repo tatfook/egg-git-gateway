@@ -85,16 +85,13 @@ class NodeController extends Controller {
   }
 
   async ensure_parents_exist(account_id, project_id, files) {
-    const tasks = [];
     for (const file of files) {
-      tasks.push(
-        this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path)
-      );
+      await this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path)
+        .catch(err => {
+          this.ctx.logger.error(err);
+          this.ctx.throw(500);
+        });
     }
-    await Promise.all(tasks).catch(errs => {
-      this.ctx.logger.error(errs);
-      this.ctx.throw(500);
-    });
   }
 }
 
