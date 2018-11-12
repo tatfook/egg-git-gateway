@@ -4,7 +4,7 @@ const Controller = require('../core/base_controller');
 
 const create_rule = {
   id: 'int',
-  username: 'string',
+  username: { type: 'string', format: /^[a-zA-Z]/ },
   password: {
     type: 'password',
     min: 6,
