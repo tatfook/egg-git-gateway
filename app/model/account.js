@@ -1,13 +1,11 @@
 'use strict';
 
-const { empty, generate_account_key } = require('../lib/helper');
+const { empty } = require('../lib/helper');
 
 module.exports = app => {
-  const redis = app.redis;
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
   const logger = app.logger;
-  const cache_expire = app.config.cache_expire;
 
   const AccountSchema = new Schema({
     _id: Number,
@@ -19,69 +17,22 @@ module.exports = app => {
 
   const statics = AccountSchema.statics;
 
-  statics.cache = async function(account) {
-    const key = generate_account_key(account.kw_username);
-    const serilize_account = JSON.stringify(account);
-    await redis.setex(key, cache_expire, serilize_account)
-      .catch(err => {
-        logger.error(`fail to cache account ${key}`);
-        logger.error(err);
-      });
-  };
-
-  statics.release_cache_by_kw_username = async function(kw_username) {
-    const key = generate_account_key(kw_username);
-    await redis.del(key)
-      .catch(err => {
-        logger.error(`fail to release cache of account ${key}`);
-        logger.error(err);
-      });
-  };
-
-  statics.load_cache_by_kw_username = async function(kw_username) {
-    const key = generate_account_key(kw_username);
-    const account = await redis.get(key)
+  statics.get_by_query = async function(query) {
+    const account = await this.findOne(query)
       .catch(err => {
         logger.error(err);
+        throw err;
       });
-    return JSON.parse(account);
+    if (!empty(account)) { return account; }
   };
 
-  statics.get_by_kw_username = async function(kw_username, from_cache = true) {
-    let account;
-
-    // load from cache
-    if (from_cache) {
-      account = await this.load_cache_by_kw_username(kw_username);
-      if (!empty(account)) { return account; }
-    }
-
-    // load from db
-    account = await this.get_by_kw_username_from_db(kw_username);
-    return account;
-  };
-
-  statics.get_by_kw_username_from_db = async function(kw_username) {
-    const account = await this.findOne({ kw_username })
-      .catch(err => { logger.error(err); });
-    if (!empty(account)) {
-      await this.cache(account);
-      return account;
-    }
-  };
-
-  statics.delete_and_release_cache_by_kw_username = async function(kw_username) {
-    await this.release_cache_by_kw_username(kw_username);
-    await this.deleteOne({ kw_username })
+  statics.remove_by_query = async function(query) {
+    await this.deleteOne(query)
       .catch(err => {
+        logger.error(err);
         throw err;
       });
   };
-
-  // cache by post hook
-  AccountSchema.post('save', async account => {
-    await statics.cache(account);
-  });
 
   return mongoose.model('Account', AccountSchema);
 };

@@ -21,17 +21,8 @@ describe('test/app/model/account.test.js', () => {
     assert(AccountModel);
   });
 
-  it('should cache after created', async () => {
-    await AccountModel.create(account);
-    const cached_data = await AccountModel.load_cache_by_kw_username(account.kw_username);
-    assert(cached_data.kw_usename === account.kw_usename);
-    assert(cached_data.name === account.name);
-    assert(cached_data._id === account._id);
-    assert(cached_data.kw_id === account.kw_id);
-  });
-
   it('should get an account', async () => {
-    const loaded_account = await AccountModel.get_by_kw_username(account.kw_username);
+    const loaded_account = await AccountModel.get_by_query({ _id: account._id });
     assert(loaded_account.kw_usename === account.kw_usename);
     assert(loaded_account.name === account.name);
     assert(loaded_account.kw_id === account.kw_id);

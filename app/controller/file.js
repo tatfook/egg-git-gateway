@@ -75,18 +75,8 @@ class FileController extends Controller {
     const project = await this.get_readable_project();
     const path = this.ctx.params.path;
     const from_cache = !this.ctx.query.refresh_cache;
-    let file = await this.ctx.model.Node
-      .get_by_path(project._id, path, from_cache)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-
-    if (empty(file)) {
-      file = await this.load_from_gitlab(project);
-    }
-
-    this.throw_if_not_exist(file);
+    let file = await this.get_node(project._id, path, from_cache);
+    if (empty(file)) { file = await this.load_from_gitlab(project); }
     this.ctx.body = { content: file.content || '' };
   }
 
@@ -105,7 +95,7 @@ class FileController extends Controller {
     this.ctx.validate(create_rule);
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    await this.throw_if_node_exist(project._id, path);
+    await this.ensure_node_not_exist(project._id, path);
     await this.ensure_parent_exist(project.account_id, project._id, path);
     const file = new this.ctx.model.Node({
       name: this.get_file_name(path),
@@ -146,7 +136,7 @@ class FileController extends Controller {
     const project = await this.get_writable_project();
     const files = this.ctx.request.body.files;
     this.ensure_unique(files);
-    await this.throw_if_nodes_exist(project._id, files);
+    await this.ensure_nodes_not_exist(project._id, files);
     await this.ensure_parents_exist(project.account_id, project._id, files);
     for (const file of files) {
       file.name = this.get_file_name(file.path);
@@ -190,17 +180,8 @@ class FileController extends Controller {
     this.ctx.validate(update_rule);
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    const file = await this.ctx.model.Node
-      .get_by_path_from_db(project._id, path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.throw_if_not_exist(file);
-    file.set({
-      content: this.ctx.request.body.content,
-    });
-
+    const file = await this.get_existing_node(project._id, path, false);
+    file.set({ content: this.ctx.request.body.content });
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       encoding: this.ctx.request.body.encoding,
@@ -240,14 +221,7 @@ class FileController extends Controller {
   async remove() {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    const file = await this.ctx.model.Node
-      .get_by_path_from_db(project._id, path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.throw_if_not_exist(file);
-
+    const file = await this.get_existing_node(project._id, path, false);
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
       author: this.ctx.state.user.username,
@@ -292,14 +266,8 @@ class FileController extends Controller {
     const previous_path = this.ctx.params.path;
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     const project = await this.get_writable_project();
-    const file = await this.ctx.model.Node
-      .get_by_path_from_db(project._id, previous_path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.throw_if_not_exist(file);
-    await this.throw_if_node_exist(project._id, new_path);
+    const file = await this.get_existing_node(project._id, previous_path, false);
+    await this.ensure_node_not_exist(project._id, new_path);
     await this.ensure_parent_exist(project.account_id, project._id, new_path);
 
     const content = this.ctx.request.body.content;
@@ -342,20 +310,16 @@ class FileController extends Controller {
   }
 
   async load_from_gitlab(project) {
-    if (!project) {
-      project = await this.get_project();
-    }
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
+    if (!project) { project = await this.get_existing_project(); }
     const file = await this.service.gitlab
       .load_raw_file(project.git_path, this.ctx.params.path)
       .catch(err => {
         this.ctx.logger.error(err);
         if (err.response.status === 404) {
-          this.throw_if_not_exist();
+          this.throw_if_node_not_exist();
         }
         this.ctx.throw(500);
       });
-
     file.path = this.ctx.params.path;
     file.name = this.get_file_name(file.path);
     file.project_id = project._id;
@@ -372,7 +336,7 @@ class FileController extends Controller {
     this.ctx.ensureAdmin();
     const path = this.ctx.params.path;
     const project = await this.get_project();
-    await this.throw_if_node_exist(project._id, path);
+    await this.ensure_node_not_exist(project._id, path);
     await this.ensure_parent_exist(project.account_id, project._id, path);
     await this.ctx.model.Node.create({
       name: this.get_file_name(path),

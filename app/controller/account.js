@@ -26,13 +26,7 @@ class AccountController extends Controller {
   async show() {
     this.ctx.veryfy();
     const kw_username = this.ctx.state.user.username;
-    const account = await this.ctx.model.Account
-      .get_by_kw_username_from_db(kw_username)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status);
-      });
-    if (!account) { this.ctx.throw(404, 'Account not found'); }
+    const account = await this.get_existing_account({ kw_username });
     if (!account.token) {
       account.token = await this.service.gitlab.get_token(account._id);
       await account.save().catch(err => {
@@ -62,14 +56,16 @@ class AccountController extends Controller {
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
+    const kw_username = this.ctx.request.body.username;
+    await this.ensure_account_not_exist({ kw_username });
     const account_prifix = this.config.gitlab.account_prifix;
     const email_postfix = this.config.gitlab.email_postfix;
     const account = await this.service.gitlab
       .create_account({
-        username: `${account_prifix}${this.ctx.request.body.username}`,
-        name: this.ctx.request.body.username,
+        username: `${account_prifix}${kw_username}`,
+        name: kw_username,
         password: `kw${this.ctx.request.body.password}`,
-        email: `${this.ctx.request.body.username}${email_postfix}`,
+        email: `${kw_username}${email_postfix}`,
       }).catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(err.response.status);
@@ -78,7 +74,7 @@ class AccountController extends Controller {
       _id: account._id,
       kw_id: this.ctx.request.body.id,
       name: account.username,
-      kw_username: account.name,
+      kw_username,
     }).catch(err => {
       this.ctx.logger.error(err);
       throw err;
@@ -97,16 +93,9 @@ class AccountController extends Controller {
   */
   async remove() {
     this.ctx.ensureAdmin();
-    const account = await this.ctx.model.Account
-      .findOne({
-        kw_username: this.ctx.params.kw_username,
-      }).catch(err => {
-        this.ctx.logger.error(err);
-        throw err;
-      });
-    if (!account) {
-      this.ctx.throw(404, 'User Not Found');
-    }
+    const account = await this.get_existing_account({
+      kw_username: this.ctx.params.kw_username,
+    });
 
     await this.ctx.model.Node
       .delete_account(account._id)
@@ -129,7 +118,7 @@ class AccountController extends Controller {
         this.ctx.throw(err.response.status);
       });
     await this.ctx.model.Account
-      .delete_and_release_cache_by_kw_username(account.kw_username)
+      .remove_by_query({ _id: account._id })
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -144,6 +133,11 @@ class AccountController extends Controller {
       .catch(err => {
         this.ctx.logger.error(err);
       });
+  }
+
+  async ensure_account_not_exist(query) {
+    const account = await this.get_account(query);
+    this.throw_if_exists(account, 'Account already exists');
   }
 }
 

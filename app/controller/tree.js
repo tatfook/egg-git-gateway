@@ -21,7 +21,7 @@ class TreeController extends Controller {
   async show() {
     const from_cache = !this.ctx.query.refresh_cache;
     const recursive = this.ctx.query.recursive;
-    const project = await this.get_project(this.ctx.params.project_path);
+    const project = await this.get_existing_project(this.ctx.params.project_path);
     const tree = await this.ctx.model.Node
       .get_tree_by_path(
         project._id,
@@ -34,7 +34,7 @@ class TreeController extends Controller {
   }
 
   async root() {
-    const project = await this.get_project(this.ctx.params.project_path);
+    const project = await this.get_existing_project(this.ctx.params.project_path);
     const tree = await this.ctx.model.Node
       .get_tree_by_path(
         project._id,

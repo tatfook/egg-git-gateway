@@ -25,8 +25,7 @@ class ProjectController extends Controller {
  */
   async exist() {
     this.ctx.ensureAdmin();
-    const project = await this.ctx.model.Project
-      .get_by_path_from_db(this.ctx.params.path);
+    const project = await this.get_project(this.ctx.params.path);
     if (empty(project)) {
       this.ctx.body = 0;
     } else {
@@ -50,28 +49,23 @@ class ProjectController extends Controller {
   async create() {
     this.ctx.ensureAdmin();
     this.ctx.validate(create_rule);
-    const account = await this.ctx.model.Account
-      .get_by_kw_username(this.ctx.params.kw_username)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    if (empty(account)) { this.ctx.throw(404, 'User not found'); }
-
+    const kw_username = this.ctx.params.kw_username;
+    const sitename = this.ctx.request.body.sitename;
+    const project_path = `${kw_username}/${sitename}`;
+    const account = await this.get_existing_account({ kw_username });
+    await this.ensure_project_not_exist(project_path);
     const project = await this.service.gitlab
       .create_project({
-        name: this.ctx.request.body.sitename,
+        name: sitename,
         visibility: this.ctx.request.body.visibility,
         account_id: account._id,
       }).catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(err.response.status, err.response.data);
       });
-
-    project.sitename = this.ctx.request.body.sitename;
-    project.path = `${this.ctx.params.kw_username}/${project.sitename}`;
+    project.sitename = sitename;
+    project.path = project_path;
     project.site_id = this.ctx.request.body.site_id;
-
     await this.ctx.model.Project
       .create(project)
       .catch(err => {
@@ -94,10 +88,7 @@ class ProjectController extends Controller {
   async update_visibility() {
     this.ctx.ensureAdmin();
     this.ctx.validate(update_visibility_rule);
-    const project = await this.ctx.model.Project
-      .get_by_path_from_db(this.ctx.params.path);
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
-
+    const project = await this.get_existing_project(this.ctx.params.path, false);
     project.visibility = this.ctx.request.body.visibility;
     await this.service.gitlab
       .update_project_visibility(project._id, project.visibility)
@@ -128,10 +119,7 @@ class ProjectController extends Controller {
  */
   async remove() {
     this.ctx.ensureAdmin();
-    const project = await this.ctx.model.Project
-      .get_by_path_from_db(this.ctx.params.path);
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
-
+    const project = await this.get_existing_project(this.ctx.params.path, false);
     await this.ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
@@ -164,10 +152,10 @@ class ProjectController extends Controller {
       });
   }
 
-  own_this_project(username, project_path) {
-    return project_path.startsWith(`${username}/`);
+  async ensure_project_not_exist(project_path) {
+    const project = await this.get_project(project_path);
+    this.throw_if_exists(project, 'Project already exists');
   }
-
 }
 
 module.exports = ProjectController;

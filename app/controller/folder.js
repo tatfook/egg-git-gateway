@@ -41,7 +41,7 @@ class FolderController extends Controller {
     this.ctx.validate(create_rule);
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    await this.throw_if_node_exist(project._id, path);
+    await this.ensure_node_not_exist(project._id, path);
     await this.ensure_parent_exist(project.account_id, project._id, path);
     const folder = new this.ctx.model.Node({
       name: this.get_file_name(path),
@@ -72,14 +72,7 @@ class FolderController extends Controller {
   async remove() {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
-    const folder = await this.ctx.model.Node
-      .get_by_path_from_db(project._id, path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    await this.throw_if_not_exist(folder, 'tree');
-
+    const folder = await this.get_existing_node(project._id, path, false);
     const subfiles = await this.ctx.model.Node
       .get_tree_by_path_from_db(
         project._id,
@@ -134,14 +127,8 @@ class FolderController extends Controller {
     const previous_path = this.ctx.params.path;
     const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
     const project = await this.get_writable_project();
-    const folder = await this.ctx.model.Node
-      .get_by_path_from_db(project._id, previous_path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.throw_if_not_exist(folder, 'tree');
-    await this.throw_if_node_exist(project._id, new_path);
+    const folder = await this.get_existing_node(project._id, previous_path, false);
+    await this.ensure_node_not_exist(project._id, new_path);
     await this.ensure_parent_exist(project.account_id, project._id, new_path);
 
     folder.path = new_path;
@@ -149,7 +136,7 @@ class FolderController extends Controller {
     folder.name = this.get_file_name();
 
     const subfiles = await this.ctx.model.Node
-      .get_subfiles_by_path(previous_path, null, false)
+      .get_subfiles_by_path(project._id, previous_path, null, false)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);

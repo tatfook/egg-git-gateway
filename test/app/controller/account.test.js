@@ -1,6 +1,7 @@
 'use strict';
 
 const { app } = require('egg-mock/bootstrap');
+const jwt = require('keepwork-jwt-simple');
 
 const user = {
   id: 123,
@@ -18,7 +19,7 @@ before(() => {
   };
 
   const secret = app.config.jwt.secret;
-  token = app.jwt.sign(admin, secret);
+  token = jwt.encode(admin, secret, 'HS1');
 });
 
 describe('test/app/controller/account.test.js', () => {

@@ -1,6 +1,7 @@
 'use strict';
 
 const { app } = require('egg-mock/bootstrap');
+const jwt = require('keepwork-jwt-simple');
 
 let token;
 
@@ -11,7 +12,7 @@ before(async () => {
     roleId: 10,
   };
   const secret = app.config.jwt.secret;
-  token = app.jwt.sign(admin, secret);
+  token = jwt.encode(admin, secret, 'HS1');
 
   const user = {
     id: 123,

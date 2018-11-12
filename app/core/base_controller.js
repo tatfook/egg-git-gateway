@@ -4,52 +4,45 @@ const Controller = require('egg').Controller;
 const { empty } = require('../lib/helper');
 
 class Base_controllerController extends Controller {
-  async get_account(_id) {
+  async get_account(query) {
     const account = await this.ctx.model.Account
-      .findOne({ _id })
+      .get_by_query(query)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    if (empty(account)) { this.ctx.throw(404, 'Account not found'); }
     return account;
   }
 
-  own_this_project(username, project_path) {
-    return project_path.startsWith(`${username}/`);
+  async get_existing_account(query) {
+    const account = await this.get_account(query);
+    this.throw_if_not_exist(account, 'Account not found');
+    return account;
   }
 
-  async get_project(project_path) {
+  async get_project(project_path, from_cache) {
     project_path = project_path || this.ctx.params.project_path;
     const project = await this.ctx.model.Project
-      .get_by_path(project_path)
+      .get_by_path(project_path, from_cache)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    if (empty(project)) { this.ctx.throw(404, 'Project not found'); }
     return project;
   }
 
-  async get_readable_project(project_path) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.get_project(project_path);
-    const white_list = this.config.file.white_list;
-    const must_ensure = (!(white_list.includes(project.sitename)))
-      && (project.visibility === 'private');
-    if (must_ensure) {
-      await this.ctx.ensurePermission(project.site_id, 'r');
-    }
+  async get_existing_project(project_path, from_cache) {
+    const project = await this.get_project(project_path, from_cache);
+    this.throw_if_not_exist(project, 'Project not found');
     return project;
   }
 
-  async get_writable_project(project_path) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.get_project(project_path);
-    if (!this.own_this_project(this.ctx.state.user.username, project_path)) {
-      await this.ctx.ensurePermission(project.site_id, 'rw');
-    }
-    return project;
+  throw_if_exists(object, errMsg) {
+    if (!empty(object)) { this.ctx.throw(409, errMsg); }
+  }
+
+  throw_if_not_exist(object, errMsg) {
+    if (empty(object)) { this.ctx.throw(404, errMsg); }
   }
 
   success(action = 'success') {

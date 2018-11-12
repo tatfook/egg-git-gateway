@@ -2,44 +2,40 @@
 
 class ErrorHandler {
   static handle(err, ctx) {
-    try {
-      ctx.logger.error(err);
-      this[err.name](err, ctx);
-    } catch (handlerNotFoundError) {
-      this.InternalServerError(err, ctx);
-    }
+    ctx.logger.error(err);
+    const handler = ErrorHandler[err.name] || ErrorHandler.InternalServerError;
+    const errMsg = handler(err, ctx);
+    ctx.body = { error: errMsg };
   }
 
   static UnprocessableEntityError(err, ctx) {
     ctx.status = 400;
-    this.BadRequestError(err, ctx);
+    return ErrorHandler.BadRequestError(err, ctx);
   }
 
-  static BadRequestError(err, ctx) {
-    ctx.body = { error: err.errors || err.message };
+  static BadRequestError(err) {
+    return err.errors || err.message;
   }
 
-  static ConflictError(err, ctx) {
-    ctx.body = { error: err.message || 'Already exists' };
+  static ConflictError(err) {
+    return err.message || 'Already exists';
   }
 
-  static UnauthorizedError(err, ctx) {
-    ctx.body = { error: err.message };
+  static UnauthorizedError(err) {
+    return err.message;
   }
 
-  static NotFoundError(err, ctx) {
-    ctx.body = { error: err.message };
+  static NotFoundError(err) {
+    return err.message || 'Not found';
   }
 
   static InternalServerError(err, ctx) {
     ctx.status = 500;
-    ctx.body = {
-      error: 'An unknown error happened',
-    };
+    return 'An unknown error happened';
   }
 
-  static PayloadTooLargeError(err, ctx) {
-    ctx.body = { error: 'This request is too large' };
+  static PayloadTooLargeError() {
+    return 'This request is too large';
   }
 }
 

@@ -247,9 +247,9 @@ module.exports = app => {
     }
   };
 
-  statics.get_subfiles_by_path = async function(tree_path, pattern, get_self = true) {
+  statics.get_subfiles_by_path = async function(project_id, tree_path, pattern, get_self = true) {
     if (!pattern) { pattern = new RegExp(`^${tree_path}/.*`, 'u'); }
-    const subfiles = await this.find({ path: pattern })
+    const subfiles = await this.find({ project_id, path: pattern })
       .limit(999999)
       .catch(err => {
         logger.error(err);
@@ -257,7 +257,7 @@ module.exports = app => {
       });
 
     if (get_self) {
-      const folder = await this.findOne({ path: tree_path })
+      const folder = await this.findOne({ project_id, path: tree_path })
         .catch(err => {
           logger.error(err);
           throw err;

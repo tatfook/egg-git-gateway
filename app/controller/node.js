@@ -1,14 +1,33 @@
 'use strict';
 
 const Controller = require('../core/base_controller');
-const { empty } = require('../lib/helper');
-
-const file_type = {
-  tree: 'Folder',
-  blob: 'File',
-};
 
 class NodeController extends Controller {
+  async get_readable_project(project_path, from_cache) {
+    project_path = project_path || this.ctx.params.project_path;
+    const project = await this.get_existing_project(project_path, from_cache);
+    const white_list = this.config.file.white_list;
+    const must_ensure = (!(white_list.includes(project.sitename)))
+      && (project.visibility === 'private');
+    if (must_ensure) {
+      await this.ctx.ensurePermission(project.site_id, 'r');
+    }
+    return project;
+  }
+
+  async get_writable_project(project_path, from_cache) {
+    project_path = project_path || this.ctx.params.project_path;
+    const project = await this.get_existing_project(project_path, from_cache);
+    if (!this.own_this_project(this.ctx.state.user.username, project_path)) {
+      await this.ctx.ensurePermission(project.site_id, 'rw');
+    }
+    return project;
+  }
+
+  own_this_project(username, project_path) {
+    return project_path.startsWith(`${username}/`);
+  }
+
   async send_message(commit_id, project_id, es_message) {
     const wrapped_commit_message = this.service.kafka
       .wrap_commit_message(commit_id, project_id);
@@ -29,26 +48,47 @@ class NodeController extends Controller {
     return this.ctx.model.Node.get_file_name(path);
   }
 
-  get_project_path(path) {
-    path = path || this.ctx.params.path;
-    return this.ctx.model.Node.get_project_path(path);
-  }
-
   validate_file_path(path) {
     path = path || this.ctx.params.path;
     const pattern = /\.[^\.]+$/;
     if (!pattern.test(path)) { this.ctx.throw(400, 'Path of the file must end with .xxx'); }
   }
 
-  throw_if_not_exist(file, type = 'blob') {
-    const errMsg = `${file_type[type]} not found`;
-    if (empty(file)) { this.ctx.throw(404, errMsg); }
-    file.type = file.type || 'blob';
-    if (file.type !== type) { this.ctx.throw(404, errMsg); }
+  async get_node(project_id, path, from_cache) {
+    path = path || this.ctx.params.path;
+    const node = await this.ctx.model.Node
+      .get_by_path(project_id, path, from_cache)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    return node;
   }
 
-  throw_if_exists(file, message) {
-    if (!empty(file)) { this.ctx.throw(409, message); }
+  async get_existing_node(project_id, path, from_cache) {
+    const node = await this.get_node(project_id, path, from_cache);
+    this.throw_if_node_not_exist(node);
+    return node;
+  }
+
+  throw_if_node_not_exist(node) {
+    this.throw_if_not_exist(node, 'File or folder not found');
+  }
+
+  throw_if_node_exists(node) {
+    this.throw_if_exists(node, 'File or folder already exists');
+  }
+
+  async ensure_node_not_exist(project_id, path, from_cache) {
+    const node = await this.get_node(project_id, path, from_cache);
+    this.throw_if_node_exists(node);
+    return node;
+  }
+
+  async ensure_nodes_not_exist(project_id, files, from_cache) {
+    for (const file of files) {
+      await this.ensure_node_not_exist(project_id, file.path, from_cache);
+    }
   }
 
   ensure_unique(files) {
@@ -57,29 +97,6 @@ class NodeController extends Controller {
     for (const file of files) {
       if (exist_paths[file.path]) { this.ctx.throw(409, errMsg); }
       exist_paths[file.path] = true;
-    }
-  }
-
-  async throw_if_node_exist(project_id, path) {
-    path = path || this.ctx.params.path;
-    const node = await this.ctx.model.Node
-      .get_by_path_from_db(project_id, path)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-    this.throw_if_exists(node);
-  }
-
-  async throw_if_nodes_exist(project_id, files) {
-    for (const file of files) {
-      const node = await this.ctx.model.Node
-        .get_by_path_from_db(project_id, file.path)
-        .catch(err => {
-          this.ctx.logger.error(err);
-          this.ctx.throw(500);
-        });
-      if (!empty(node)) { this.ctx.throw(409, `${file.path} already exists`); }
     }
   }
 
@@ -95,11 +112,7 @@ class NodeController extends Controller {
 
   async ensure_parents_exist(account_id, project_id, files) {
     for (const file of files) {
-      await this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path)
-        .catch(err => {
-          this.ctx.logger.error(err);
-          this.ctx.throw(500);
-        });
+      await this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path);
     }
   }
 }
