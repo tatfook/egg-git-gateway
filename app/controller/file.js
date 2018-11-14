@@ -96,14 +96,15 @@ class FileController extends Controller {
     const path = this.ctx.params.path;
     const project = await this.get_writable_project();
     await this.ensure_node_not_exist(project._id, path);
-    await this.ensure_parent_exist(project.account_id, project._id, path);
-    const file = new this.ctx.model.Node({
+    const nodes_to_create = await this.ctx.model.Node
+      .get_parents_not_exist(project.account_id, project._id, path);
+    const file = {
       name: this.get_file_name(path),
       content: this.ctx.request.body.content,
       path,
       project_id: project._id,
       account_id: project.account_id,
-    });
+    };
 
     const commit_options = {
       commit_message: this.ctx.request.body.commit_message,
@@ -117,10 +118,13 @@ class FileController extends Controller {
         this.ctx.throw(500);
       });
 
-    await file.save().catch(err => {
-      this.ctx.logger.error(err);
-      this.ctx.throw(500);
-    });
+    nodes_to_create.push(file);
+    await this.ctx.model.Node
+      .create(nodes_to_create)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
 
     const es_message = {
       action: 'create_file',
@@ -137,7 +141,8 @@ class FileController extends Controller {
     const files = this.ctx.request.body.files;
     this.ensure_unique(files);
     await this.ensure_nodes_not_exist(project._id, files);
-    await this.ensure_parents_exist(project.account_id, project._id, files);
+    const ancestors_to_create = await this.ctx.model.Node
+      .get_parents_not_exist(project.account_id, project._id, files);
     for (const file of files) {
       file.name = this.get_file_name(file.path);
       file.project_id = project._id;
@@ -154,8 +159,9 @@ class FileController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
+    const nodes_to_create = files.concat(ancestors_to_create);
     await this.ctx.model.Node
-      .create(files)
+      .create(nodes_to_create)
       .catch(err => {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
@@ -334,20 +340,49 @@ class FileController extends Controller {
 
   async migrate() {
     this.ctx.ensureAdmin();
+    this.ctx.validate(create_rule);
     const path = this.ctx.params.path;
     const project = await this.get_project();
     await this.ensure_node_not_exist(project._id, path);
-    await this.ensure_parent_exist(project.account_id, project._id, path);
-    await this.ctx.model.Node.create({
+    const ancestors_to_create = await this.ctx.model.Node
+      .get_parents_not_exist(project.account_id, project._id, path);
+    const file = {
       name: this.get_file_name(path),
       content: this.ctx.request.body.content,
       path,
       project_id: project._id,
       account_id: project.account_id,
-    }).catch(err => {
-      this.ctx.logger.error(err);
-      this.ctx.throw(500);
-    });
+    };
+    const nodes_to_create = ancestors_to_create.push(file);
+    await this.ctx.model.Node
+      .create(nodes_to_create)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    this.created();
+  }
+
+  async migrate_many() {
+    this.ctx.ensureAdmin();
+    this.ctx.validate(create_many_rule);
+    const project = await this.get_project();
+    const files = this.ctx.request.body.files;
+    this.ensure_unique(files);
+    const ancestors_to_create = await this.ctx.model.Node
+      .get_parents_not_exist(project.account_id, project._id, files);
+    for (const file of files) {
+      file.name = this.get_file_name(file.path);
+      file.project_id = project._id;
+      file.account_id = project.account_id;
+    }
+    const nodes_to_create = files.concat(ancestors_to_create);
+    await this.ctx.model.Node
+      .create(nodes_to_create)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
     this.created();
   }
 }

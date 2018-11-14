@@ -218,26 +218,50 @@ module.exports = app => {
     return tree;
   };
 
-  statics.ensure_parent_exist = async function(account_id, project_id, path) {
+  statics.get_ancestors_of_node = async function(
+    account_id, project_id, ancestors_to_create = {},
+    ancestors_already_exist = {}, node) {
+    let path = node.path;
     const ancestor_names = path.split('/');
-    const ancestors_to_create = [];
     let node_name = ancestor_names[ancestor_names.length - 1];
     for (let i = ancestor_names.length - 2; i >= 0; i--) {
       path = this.get_tree_path(path, node_name);
       node_name = ancestor_names[i];
+      if (ancestors_to_create[path] || ancestors_already_exist[path]) { continue; }
       const parent = await this.get_by_path_from_db(project_id, path);
       if (empty(parent)) {
-        ancestors_to_create.push({
+        ancestors_to_create[path] = {
           name: node_name,
           type: 'tree',
           path,
           project_id,
           account_id,
-        });
+        };
       } else {
-        break;
+        ancestors_already_exist[path] = true;
       }
     }
+  };
+
+  statics.get_parents_not_exist = async function(account_id, project_id, nodes) {
+    const ancestors_to_create = {};
+    const ancestors_already_exist = {};
+    if (!(nodes instanceof Array)) { nodes = [{ path: nodes }]; }
+    for (const node of nodes) {
+      await this.get_ancestors_of_node(
+        account_id,
+        project_id,
+        ancestors_to_create,
+        ancestors_already_exist,
+        node
+      );
+    }
+    return Object.values(ancestors_to_create);
+  };
+
+  statics.ensure_parent_exist = async function(account_id, project_id, path) {
+    const ancestors_to_create = await this
+      .get_parents_not_exist(account_id, project_id, path);
     if (ancestors_to_create.length > 0) {
       await this.create(ancestors_to_create)
         .catch(err => {

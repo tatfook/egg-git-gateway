@@ -26,7 +26,6 @@ module.exports = app => {
   router.get('/projects/:project_path/files/:path', controller.file.show);
   router.post('/projects/:project_path/files/:path', controller.file.create);
   router.post('/projects/:project_path/files', controller.file.create_many);
-  router.post('/projects/:project_path/files/:path/migrate', controller.file.migrate);
   router.put('/projects/:project_path/files/:path', controller.file.update);
   router.put('/projects/:project_path/files/:path/move', controller.file.move);
   router.del('/projects/:project_path/files/:path', controller.file.remove);
@@ -34,4 +33,7 @@ module.exports = app => {
   router.post('/projects/:project_path/folders/:path', controller.folder.create);
   router.put('/projects/:project_path/folders/:path/move', controller.folder.move);
   router.del('/projects/:project_path/folders/:path', controller.folder.remove);
+
+  router.post('/projects/:project_path/migrate/files/:path', controller.file.migrate);
+  router.post('/projects/:project_path/migrate/files/', controller.file.migrate_many);
 };

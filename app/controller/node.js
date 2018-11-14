@@ -28,6 +28,18 @@ class NodeController extends Controller {
     return project_path.startsWith(`${username}/`);
   }
 
+  async clear_project() {
+    this.ctx.ensureAdmin();
+    const project = await this.get_project();
+    await this.ctx.model.Node
+      .delete_project(project._id)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        this.ctx.throw(500);
+      });
+    this.deleted();
+  }
+
   async send_message(commit_id, project_id, es_message) {
     const wrapped_commit_message = this.service.kafka
       .wrap_commit_message(commit_id, project_id);
