@@ -20,10 +20,12 @@ class KeepworkService extends Service {
   async ensurePermission(token, site_id, type) {
     try {
       const permission = this.config.permission[type];
+      const refuse_code = this.config.permission.reject;
       const res = await this.client.get(
         `/sites/${site_id}/privilege`,
         { headers: { Authorization: token } }
       );
+      if (res.data === refuse_code) { return false; }
       if (res.data >= permission) { return true; }
       return false;
     } catch (err) {

@@ -25,6 +25,7 @@ module.exports = appInfo => {
   config.permission = {
     r: 32,
     rw: 64,
+    reject: 128,
   };
 
   config.static = {
