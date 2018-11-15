@@ -34,7 +34,7 @@ module.exports = app => {
   router.put('/projects/:project_path/folders/:path/move', controller.folder.move);
   router.del('/projects/:project_path/folders/:path', controller.folder.remove);
 
-  router.post('/projects/:project_path/clear', controller.file.clear_project);
+  router.delete('/projects/:project_path/clear', controller.file.clear_project);
   router.post('/projects/:project_path/migrate/files/:path', controller.file.migrate);
   router.post('/projects/:project_path/migrate/files/', controller.file.migrate_many);
 };
