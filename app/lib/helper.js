@@ -9,7 +9,7 @@ module.exports = {
     return false;
   },
   paginate(query) {
-    const limit = Number(query.per_page) || 20;
+    const limit = Number(query.per_page) || 10000;
     const page = Number(query.page) || 1;
     const skip = (page - 1) * limit;
     return { skip, limit };
