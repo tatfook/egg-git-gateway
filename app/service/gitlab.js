@@ -258,8 +258,8 @@ class GitlabService extends Service {
         this.app.logger.error(err);
         throw err;
       });
-    if (res.data.startsWith('<!DOCTYPE html>')) { throw { response: { status: 404 } }; }
     if (file_path.endsWith('.json')) { res.data = JSON.stringify(res.data); }
+    if (res.data.startsWith('<!DOCTYPE html>')) { throw { response: { status: 404 } }; }
     return { content: res.data };
   }
 }
