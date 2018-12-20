@@ -11,7 +11,7 @@ module.exports = {
     let errMsg;
     this.state = this.state || {};
     if (empty(this.state.user)) {
-      errMsg = 'The resource is protected.Valid authorization token was required';
+      errMsg = 'Valid authorization token was required';
     } else if (!this.state.user.userId || !this.state.user.username) {
       errMsg = 'Invalid token';
     }
@@ -25,7 +25,7 @@ module.exports = {
       .ensurePermission(token, site_id, type);
     if (!permitted) {
       const errMsg = 'Not allowed to access this protected resource';
-      this.throw(401, errMsg);
+      this.throw(403, errMsg);
     }
   },
   ensureAdmin() {
@@ -33,6 +33,6 @@ module.exports = {
     this.state = this.state || {};
     this.state.user = this.state.user || {};
     const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
-    if (not_permitted) { this.throw(401, errMsg); }
+    if (not_permitted) { this.throw(403, errMsg); }
   },
 };

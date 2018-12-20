@@ -17,6 +17,10 @@ class ErrorHandler {
     return err.errors || err.message;
   }
 
+  static ForbiddenError(err) {
+    return err.message || 'Forbidden';
+  }
+
   static ConflictError(err) {
     return err.message || 'Already exists';
   }
