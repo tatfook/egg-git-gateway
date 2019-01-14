@@ -4,6 +4,7 @@ const assert = require('assert');
 const { empty, generate_file_key, generate_tree_key } = require('../lib/helper');
 
 const serilize_file = file => JSON.stringify({
+  _id: file._id,
   path: file.path,
   type: file.type,
   content: file.content,
@@ -109,12 +110,25 @@ module.exports = app => {
     return pipeline;
   };
 
-  statics.release_multi_files_cache = function(files, pipeline = redis.pipeline()) {
+  statics.release_multi_files_cache = function(files, project_id, pipeline = redis.pipeline()) {
     const keys_to_release = [];
     for (const file of files) {
-      keys_to_release.push(generate_file_key(file.project_id, file.path));
-      if (file.type === 'tree') { keys_to_release.push(generate_tree_key(file.project_id, file.path)); }
+      file.project_id = file.project_id || project_id;
+      const file_key = generate_file_key(
+        file.project_id || project_id,
+        file.path
+      );
+      keys_to_release.push(file_key);
+
+      if (file.type === 'tree') {
+        const tree_key = generate_tree_key(
+          file.project_id || project_id,
+          file.path
+        );
+        keys_to_release.push(tree_key);
+      }
     }
+    console.log(keys_to_release);
     pipeline.del(keys_to_release);
     return pipeline;
   };
@@ -187,7 +201,7 @@ module.exports = app => {
       query_condition = { project_id };
     }
 
-    const selected_fields = 'name path type -_id';
+    const selected_fields = '_id name path type';
     const tree = await this.find(query_condition, selected_fields)
       .skip(pagination.skip)
       .limit(pagination.limit)
@@ -301,10 +315,9 @@ module.exports = app => {
           throw err;
         });
     }
-
     if (empty(subfiles)) { return; }
 
-    const pipeline = this.release_multi_files_cache(subfiles);
+    const pipeline = this.release_multi_files_cache(subfiles, project_id);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);
