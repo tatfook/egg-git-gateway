@@ -38,12 +38,13 @@ class FolderController extends Controller {
   * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async create() {
-    this.ctx.validate(create_rule);
-    const path = this.ctx.params.path;
+    const { ctx } = this;
+    ctx.validate(create_rule);
+    const path = ctx.params.path;
     const project = await this.get_writable_project();
     await this.ensure_node_not_exist(project._id, path);
     await this.ensure_parent_exist(project.account_id, project._id, path);
-    const folder = new this.ctx.model.Node({
+    const folder = new ctx.model.Node({
       name: this.get_file_name(path),
       type: 'tree',
       path,
@@ -52,8 +53,8 @@ class FolderController extends Controller {
     });
 
     await folder.save().catch(err => {
-      this.ctx.logger.error(err);
-      this.ctx.throw(500);
+      ctx.logger.error(err);
+      ctx.throw(500);
     });
 
     this.created();
@@ -70,44 +71,40 @@ class FolderController extends Controller {
   * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async remove() {
-    const path = this.ctx.params.path;
+    const { ctx } = this;
+    const path = ctx.params.path;
     const project = await this.get_writable_project();
     const folder = await this.get_existing_node(project._id, path, false);
-    const subfiles = await this.ctx.model.Node
+    const subfiles = await ctx.model.Node
       .get_tree_by_path_from_db(
         project._id,
-        this.ctx.params.path,
+        ctx.params.path,
         true,
         { skip: 0, limit: 9999999 }
       );
     subfiles.push(folder);
 
     const commit_options = {
-      commit_message: this.ctx.request.body.commit_message ||
-        `${this.ctx.state.user.username} delete folder ${folder.path}`,
-      author: this.ctx.state.user.username,
+      commit_message: ctx.request.body.commit_message ||
+        `${ctx.state.user.username} delete folder ${folder.path}`,
+      author: ctx.state.user.username,
     };
 
-    const commit = await this.ctx.model.Commit
+    const commit = await ctx.model.Commit
       .delete_file(subfiles, project._id, commit_options)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    await this.ctx.model.Node
+    await ctx.model.Node
       .delete_subfiles_and_release_cache(project._id, folder.path, subfiles)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    const es_message = {
-      action: 'remove_folder',
-      path: folder.path,
-    };
-
-    await this.send_message(commit._id, project._id, es_message);
+    await this.send_message(commit);
     this.deleted();
   }
 
@@ -123,9 +120,10 @@ class FolderController extends Controller {
   * @apiParam {String} new_path New path of the folder such as 'username/sitename/new'
   */
   async move() {
-    this.ctx.validate(move_rule);
-    const previous_path = this.ctx.params.path;
-    const new_path = this.ctx.params.path = this.ctx.request.body.new_path;
+    const { ctx } = this;
+    ctx.validate(move_rule);
+    const previous_path = ctx.params.path;
+    const new_path = ctx.params.path = ctx.request.body.new_path;
     const project = await this.get_writable_project();
     const folder = await this.get_existing_node(project._id, previous_path, false);
     await this.ensure_node_not_exist(project._id, new_path);
@@ -135,11 +133,11 @@ class FolderController extends Controller {
     folder.previous_path = previous_path;
     folder.name = this.get_file_name();
 
-    const subfiles = await this.ctx.model.Node
+    const subfiles = await ctx.model.Node
       .get_subfiles_by_path(project._id, previous_path, null, false)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
     const pattern = new RegExp(`^${previous_path}`, 'u');
@@ -149,32 +147,26 @@ class FolderController extends Controller {
     }
     subfiles.push(folder);
 
-    const commit_options = {
-      commit_message: this.ctx.request.body.commit_message,
-      encoding: this.ctx.request.body.encoding,
-      author: this.ctx.state.user.username,
-    };
-    const commit = await this.ctx.model.Commit
-      .move_file(subfiles, project._id, commit_options)
-      .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
-      });
-
     const tasks = subfiles.map(file => { return file.save(); });
     await Promise.all(tasks)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    const es_message = {
-      action: 'move_folder',
-      path: folder.path,
-      previous_path: folder.previous_path,
+    const commit_options = {
+      commit_message: ctx.request.body.commit_message,
+      encoding: ctx.request.body.encoding,
+      author: ctx.state.user.username,
     };
+    const commit = await ctx.model.Commit
+      .move_file(subfiles, project._id, commit_options)
+      .catch(err => {
+        ctx.logger.error(err);
+        ctx.throw(500);
+      });
 
-    await this.send_message(commit._id, project._id, es_message);
+    await this.send_message(commit);
     this.moved();
   }
 }

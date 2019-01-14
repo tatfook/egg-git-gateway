@@ -1,5 +1,7 @@
 'use strict';
 
+const fast_JSON = require('fast-json-stringify');
+
 class CommitFormatter {
   static output(actions, project_id, options) {
     return {
@@ -13,6 +15,7 @@ class CommitFormatter {
 
   static format_create_action(file, options) {
     return {
+      _id: file._id,
       action: 'create',
       file_path: file.path,
       content: file.content,
@@ -22,6 +25,7 @@ class CommitFormatter {
 
   static format_update_action(file, options) {
     return {
+      _id: file._id,
       action: 'update',
       file_path: file.path,
       content: file.content,
@@ -32,6 +36,7 @@ class CommitFormatter {
   static format_delete_action(file) {
     const file_path = file.path;
     return {
+      _id: file._id,
       action: 'delete',
       file_path,
     };
@@ -39,6 +44,7 @@ class CommitFormatter {
 
   static format_move_action(file, options) {
     return {
+      _id: file._id,
       action: 'move',
       file_path: file.path,
       previous_path: file.previous_path,
@@ -101,6 +107,7 @@ module.exports = app => {
   const logger = app.logger;
 
   const ActionSchema = new Schema({
+    _id: String,
     action: String,
     file_path: String,
     previous_path: String,
@@ -115,6 +122,27 @@ module.exports = app => {
     commit_message: String,
     author_name: String,
   }, { timestamps: true });
+
+  const stringify = fast_JSON({
+    title: 'stringify commit',
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      actions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            action: { type: 'string' },
+            file_path: { type: 'string' },
+            previous_path: { type: 'string' },
+            content: { type: 'string' },
+          },
+        },
+      },
+    },
+  });
 
   const statics = CommitSchema.statics;
 
@@ -153,6 +181,10 @@ module.exports = app => {
         throw err;
       });
   };
+
+  CommitSchema.virtual('stringify').get(function() {
+    return stringify(this);
+  });
 
   return mongoose.model('Commit', CommitSchema);
 };

@@ -41,10 +41,9 @@ class KafkaService extends Service {
   }
 
   wrap_elasticsearch_message(message, project_id) {
-    assert(message.action);
     return {
       topic: this.config.kafka.topics.elasticsearch,
-      messages: JSON.stringify(message),
+      messages: message,
       key: project_id,
     };
   }
