@@ -3,7 +3,6 @@
 const Service = require('egg').Service;
 const { KafkaClient, HighLevelProducer } = require('kafka-node');
 const { promisify, inspect } = require('util');
-const assert = require('assert');
 
 let Client;
 let Producer;
@@ -32,19 +31,19 @@ class KafkaService extends Service {
     });
   }
 
-  wrap_commit_message(commit_id, project_id) {
+  wrap_commit_message(message, key) {
     return {
       topic: this.config.kafka.topics.commit,
-      messages: commit_id,
-      key: project_id,
+      messages: message,
+      key,
     };
   }
 
-  wrap_elasticsearch_message(message, project_id) {
+  wrap_elasticsearch_message(message, key) {
     return {
       topic: this.config.kafka.topics.elasticsearch,
       messages: message,
-      key: project_id,
+      key,
     };
   }
 

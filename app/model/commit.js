@@ -6,7 +6,7 @@ class CommitFormatter {
   static output(actions, project_id, options) {
     return {
       branch: options.branch || 'master',
-      id: project_id,
+      project_id,
       author_name: options.author || null,
       commit_message: options.commit_message,
       actions,
@@ -117,7 +117,7 @@ module.exports = app => {
 
   const CommitSchema = new Schema({
     branch: { type: String, default: 'master' },
-    id: String,
+    project_id: String,
     actions: [ ActionSchema ],
     commit_message: String,
     author_name: String,
@@ -127,7 +127,7 @@ module.exports = app => {
     title: 'stringify commit',
     type: 'object',
     properties: {
-      id: { type: 'string' },
+      project_id: { type: 'string' },
       actions: {
         type: 'array',
         items: {

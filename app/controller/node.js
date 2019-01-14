@@ -40,19 +40,15 @@ class NodeController extends Controller {
     this.deleted();
   }
 
-  async send_message(...params) {
-    let [ commit_id, project_id, es_message ] = params;
-    if (params.length === 1) {
-      const commit = commit_id;
-      commit_id = commit._id;
-      project_id = commit.id;
-      es_message = commit;
-    }
+  async send_message(commit) {
+    const commit_id = commit._id;
+    const project_id = commit.project_id;
+    const es_message = commit;
+
     const wrapped_commit_message = this.service.kafka
       .wrap_commit_message(commit_id, project_id);
     const payloads = [ wrapped_commit_message ];
     if (es_message) {
-      console.log(es_message);
       const wrapped_es_message = this.service.kafka
         .wrap_elasticsearch_message(es_message.stringify, project_id);
       payloads.push(wrapped_es_message);
