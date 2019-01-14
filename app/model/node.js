@@ -1,18 +1,36 @@
 'use strict';
 
 const assert = require('assert');
+const fast_JSON = require('fast-json-stringify');
 const { empty, generate_file_key, generate_tree_key } = require('../lib/helper');
 
-const serilize_file = file => JSON.stringify({
-  _id: file._id,
-  path: file.path,
-  type: file.type,
-  content: file.content,
+const stringify_file = fast_JSON({
+  title: 'stringify file',
+  type: 'object',
+  properties: {
+    _id: { type: 'string' },
+    path: { type: 'string' },
+    type: { type: 'string' },
+    content: { type: 'string' },
+  },
 });
 
-const serilize_tree = tree => {
-  return JSON.stringify(tree);
-};
+const stringify_tree = fast_JSON({
+  title: 'stringify tree',
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      name: { type: 'string' },
+      type: { type: 'string' },
+      path: { type: 'string' },
+    },
+  },
+});
+
+const serilize_file = file => stringify_file(file);
+const serilize_tree = tree => stringify_tree(tree);
 
 const deserialize_tree = serilized_tree => {
   return JSON.parse(serilized_tree);
