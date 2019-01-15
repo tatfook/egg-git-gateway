@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const fast_JSON = require('fast-json-stringify');
 const { empty, generate_project_key, generate_tree_key } = require('../lib/helper');
 
 module.exports = app => {
@@ -21,11 +22,26 @@ module.exports = app => {
     account_id: Number,
   }, { timestamps: true });
 
+  const stringify = fast_JSON({
+    title: 'stringify project',
+    type: 'object',
+    properties: {
+      _id: { type: 'number' },
+      visibility: { type: 'string' },
+      name: { type: 'string' },
+      site_id: { type: 'number' },
+      sitename: { type: 'string' },
+      path: { type: 'string' },
+      git_path: { type: 'string' },
+      account_id: { type: 'number' },
+    },
+  });
+
   const statics = ProjectSchema.statics;
 
   statics.cache = async function(project) {
     const key = generate_project_key(project.path);
-    const serilized_project = JSON.stringify(project);
+    const serilized_project = stringify(project);
     await redis.setex(key, cache_expire, serilized_project)
       .catch(err => {
         logger.error(`fail to cache project ${key}`);
