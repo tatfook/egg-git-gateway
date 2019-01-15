@@ -6,6 +6,7 @@ class CommitFormatter {
   static output(actions, project_id, options) {
     return {
       branch: options.branch || 'master',
+      visibility: options.visibility,
       project_id,
       author_name: options.author || null,
       commit_message: options.commit_message,
@@ -117,6 +118,7 @@ module.exports = app => {
 
   const CommitSchema = new Schema({
     branch: { type: String, default: 'master' },
+    visibility: { type: String, default: 'public' },
     project_id: String,
     actions: [ ActionSchema ],
     commit_message: String,
@@ -128,6 +130,8 @@ module.exports = app => {
     type: 'object',
     properties: {
       project_id: { type: 'string' },
+      createdAt: { type: 'string' },
+      visibility: { type: 'string' },
       actions: {
         type: 'array',
         items: {
