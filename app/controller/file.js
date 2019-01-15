@@ -117,11 +117,7 @@ class FileController extends Controller {
       });
     file = files[files.length - 1];
 
-    const commit_options = {
-      commit_message: ctx.request.body.commit_message,
-      encoding: ctx.request.body.encoding,
-      author: ctx.state.user.username,
-    };
+    const commit_options = this.get_commit_options(project);
     const commit = await ctx.model.Commit
       .create_file(file, project._id, commit_options)
       .catch(err => {
@@ -156,11 +152,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = {
-      commit_message: ctx.request.body.commit_message,
-      encoding: ctx.request.body.encoding,
-      author: ctx.state.user.username,
-    };
+    const commit_options = this.get_commit_options(project);
     const commit = await ctx.model.Commit
       .create_file(files, project._id, commit_options)
       .catch(err => {
@@ -196,11 +188,7 @@ class FileController extends Controller {
       ctx.throw(500);
     });
 
-    const commit_options = {
-      commit_message: ctx.request.body.commit_message,
-      encoding: ctx.request.body.encoding,
-      author: ctx.state.user.username,
-    };
+    const commit_options = this.get_commit_options(project);
     const commit = await ctx.model.Commit
       .update_file(file, project._id, commit_options)
       .catch(err => {
@@ -238,6 +226,7 @@ class FileController extends Controller {
     const commit_options = {
       commit_message: ctx.request.body.commit_message,
       author: ctx.state.user.username,
+      visibility: project.visibility,
     };
     const commit = await ctx.model.Commit
       .delete_file(file, project._id, commit_options)
@@ -284,11 +273,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = {
-      commit_message: ctx.request.body.commit_message,
-      encoding: ctx.request.body.encoding,
-      author: ctx.state.user.username,
-    };
+    const commit_options = this.get_commit_options(project);
     const commit = await ctx.model.Commit
       .move_file(file, project._id, commit_options)
       .catch(err => {

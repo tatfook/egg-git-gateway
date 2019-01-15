@@ -43,16 +43,11 @@ class NodeController extends Controller {
   async send_message(commit) {
     const commit_id = commit._id;
     const project_id = commit.project_id;
-    const es_message = commit;
-
     const wrapped_commit_message = this.service.kafka
       .wrap_commit_message(commit_id, project_id);
-    const payloads = [ wrapped_commit_message ];
-    if (es_message) {
-      const wrapped_es_message = this.service.kafka
-        .wrap_elasticsearch_message(es_message.stringify, project_id);
-      payloads.push(wrapped_es_message);
-    }
+    const wrapped_es_message = this.service.kafka
+      .wrap_elasticsearch_message(commit.stringify, project_id);
+    const payloads = [ wrapped_commit_message, wrapped_es_message ];
     await this.service.kafka.send(payloads)
       .catch(err => {
         this.ctx.logger.error(err);
@@ -130,6 +125,16 @@ class NodeController extends Controller {
     for (const file of files) {
       await this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path);
     }
+  }
+
+  get_commit_options(project) {
+    const { ctx } = this;
+    return {
+      commit_message: ctx.request.body.commit_message,
+      encoding: ctx.request.body.encoding,
+      author: ctx.state.user.username,
+      visibility: project.visibility,
+    };
   }
 }
 
