@@ -102,6 +102,12 @@ class ProjectController extends Controller {
       this.ctx.throw(500);
     });
 
+    if (project.site_id) {
+      const { path, visibility } = project;
+      await this.service.es.update_site_visibilty(path, visibility)
+        .catch(err => { this.ctx.logger.error(err); });
+    }
+
     this.ctx.body = {
       site_id: project.site_id,
       visibility: project.visibility,
@@ -140,16 +146,14 @@ class ProjectController extends Controller {
         this.ctx.logger.error(err);
         this.ctx.throw(500);
       });
-    this.deleted();
-  }
 
-  async send_message(project_id, es_message) {
-    const wrapped_es_message = this.service.kafka
-      .wrap_elasticsearch_message(es_message, project_id);
-    await this.service.kafka.send(wrapped_es_message)
-      .catch(err => {
-        this.ctx.logger.error(err);
-      });
+    if (project.site_id) {
+      const { path } = project;
+      await this.service.es.destroy_site(path)
+        .catch(err => { this.ctx.logger.error(err); });
+    }
+
+    this.deleted();
   }
 
   async ensure_project_not_exist(project_path) {
