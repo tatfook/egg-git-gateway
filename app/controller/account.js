@@ -24,18 +24,19 @@ class AccountController extends Controller {
   * @apiParam {String{ > 6 }} password Password of the gitlab account
   */
   async show() {
-    this.ctx.veryfy();
-    const kw_username = this.ctx.state.user.username;
+    const { ctx, service } = this;
+    ctx.veryfy();
+    const kw_username = ctx.state.user.username;
     const account = await this.get_existing_account({ kw_username });
     if (!account.token) {
-      account.token = await this.service.gitlab.get_token(account._id);
+      account.token = await service.gitlab.get_token(account._id);
       await account.save().catch(err => {
         const errMsg = 'Failed to get token';
-        this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status, errMsg);
+        ctx.logger.error(err);
+        ctx.throw(err.response.status, errMsg);
       });
     }
-    this.ctx.body = {
+    ctx.body = {
       git_id: account._id,
       git_username: account.name,
       token: account.token,
@@ -54,29 +55,30 @@ class AccountController extends Controller {
   * @apiParam {String{ > 6 }} password Password of the gitlab account
   */
   async create() {
-    this.ctx.ensureAdmin();
-    this.ctx.validate(create_rule);
-    const kw_username = this.ctx.request.body.username;
+    const { ctx, service, config } = this;
+    ctx.ensureAdmin();
+    ctx.validate(create_rule);
+    const kw_username = ctx.params.username;
     await this.ensure_account_not_exist({ kw_username });
-    const account_prifix = this.config.gitlab.account_prifix;
-    const email_postfix = this.config.gitlab.email_postfix;
-    const account = await this.service.gitlab
+    const account_prifix = config.gitlab.account_prifix;
+    const email_postfix = config.gitlab.email_postfix;
+    const account = await service.gitlab
       .create_account({
         username: `${account_prifix}${kw_username}`,
         name: kw_username,
-        password: `kw${this.ctx.request.body.password}`,
+        password: `kw${ctx.params.password}`,
         email: `${kw_username}${email_postfix}`,
       }).catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status);
+        ctx.logger.error(err);
+        ctx.throw(err.response.status);
       });
-    await this.ctx.model.Account.create({
+    await ctx.model.Account.create({
       _id: account._id,
-      kw_id: this.ctx.request.body.id,
+      kw_id: ctx.params.id,
       name: account.username,
       kw_username,
     }).catch(err => {
-      this.ctx.logger.error(err);
+      ctx.logger.error(err);
       throw err;
     });
     this.created();
@@ -92,47 +94,39 @@ class AccountController extends Controller {
   * @apiParam {String} username Username of the user
   */
   async remove() {
-    this.ctx.ensureAdmin();
+    const { ctx, service } = this;
+    ctx.ensureAdmin();
     const account = await this.get_existing_account({
-      kw_username: this.ctx.params.kw_username,
+      kw_username: ctx.params.kw_username,
     });
 
-    await this.ctx.model.Node
+    await ctx.model.Node
       .delete_account(account._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    await this.ctx.model.Project
+    await ctx.model.Project
       .delete_account(account._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    await this.service.gitlab
+    await service.gitlab
       .delete_account(account._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status);
+        ctx.logger.error(err);
+        ctx.throw(err.response.status);
       });
-    await this.ctx.model.Account
+    await ctx.model.Account
       .remove_by_query({ _id: account._id })
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     this.deleted();
-  }
-
-  async send_message(account_id, es_message) {
-    const wrapped_es_message = this.service.kafka
-      .wrap_elasticsearch_message(es_message, account_id);
-    await this.service.kafka.send(wrapped_es_message)
-      .catch(err => {
-        this.ctx.logger.error(err);
-      });
   }
 
   async ensure_account_not_exist(query) {

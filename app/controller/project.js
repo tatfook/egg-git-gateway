@@ -1,7 +1,6 @@
 'use strict';
 
 const Controller = require('../core/base_controller');
-const { empty } = require('../lib/helper');
 
 const create_rule = {
   sitename: 'string',
@@ -24,12 +23,13 @@ class ProjectController extends Controller {
  * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
  */
   async exist() {
-    this.ctx.ensureAdmin();
-    const project = await this.get_project(this.ctx.params.path);
-    if (empty(project)) {
-      this.ctx.body = 0;
+    const { ctx } = this;
+    ctx.ensureAdmin();
+    const project = await this.get_project(ctx.params.path);
+    if (ctx.helper.empty(project)) {
+      ctx.body = 0;
     } else {
-      this.ctx.body = 1;
+      ctx.body = 1;
     }
   }
 
@@ -47,30 +47,31 @@ class ProjectController extends Controller {
  * project is bound to a website,it is required.
  */
   async create() {
-    this.ctx.ensureAdmin();
-    this.ctx.validate(create_rule);
-    const kw_username = this.ctx.params.kw_username;
-    const sitename = this.ctx.request.body.sitename;
+    const { ctx, service } = this;
+    ctx.ensureAdmin();
+    ctx.validate(create_rule);
+    const kw_username = ctx.params.kw_username;
+    const sitename = ctx.params.sitename;
     const project_path = `${kw_username}/${sitename}`;
     const account = await this.get_existing_account({ kw_username });
     await this.ensure_project_not_exist(project_path);
-    const project = await this.service.gitlab
+    const project = await service.gitlab
       .create_project({
         name: sitename,
-        visibility: this.ctx.request.body.visibility,
+        visibility: ctx.params.visibility,
         account_id: account._id,
       }).catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(err.response.status, err.response.data);
+        ctx.logger.error(err);
+        ctx.throw(err.response.status, err.response.data);
       });
     project.sitename = sitename;
     project.path = project_path;
-    project.site_id = this.ctx.request.body.site_id;
-    await this.ctx.model.Project
+    project.site_id = ctx.params.site_id;
+    await ctx.model.Project
       .create(project)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     this.created();
   }
@@ -86,20 +87,21 @@ class ProjectController extends Controller {
  * @apiParam {String="public", "private"} visibility Visibility of the website
  */
   async update_visibility() {
-    this.ctx.ensureAdmin();
-    this.ctx.validate(update_visibility_rule);
-    const project = await this.get_existing_project(this.ctx.params.path, false);
-    project.visibility = this.ctx.request.body.visibility;
-    await this.service.gitlab
+    const { ctx, service } = this;
+    ctx.ensureAdmin();
+    ctx.validate(update_visibility_rule);
+    const project = await this.get_existing_project(ctx.params.path, false);
+    project.visibility = ctx.params.visibility;
+    await service.gitlab
       .update_project_visibility(project._id, project.visibility)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
     await project.save().catch(err => {
-      this.ctx.logger.error(err);
-      this.ctx.throw(500);
+      ctx.logger.error(err);
+      ctx.throw(500);
     });
 
     if (project.site_id) {
@@ -107,7 +109,7 @@ class ProjectController extends Controller {
       await this.send_message(project, method_to_call);
     }
 
-    this.ctx.body = {
+    ctx.body = {
       site_id: project.site_id,
       visibility: project.visibility,
     };
@@ -123,27 +125,28 @@ class ProjectController extends Controller {
  * @apiParam {String} encoded_path Urlencoded path of a project.Like 'username%2Fproject_name'
  */
   async remove() {
-    this.ctx.ensureAdmin();
-    const project = await this.get_existing_project(this.ctx.params.path, false);
-    await this.ctx.model.Node
+    const { ctx, service } = this;
+    ctx.ensureAdmin();
+    const project = await this.get_existing_project(ctx.params.path, false);
+    await ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    await this.service.gitlab
+    await service.gitlab
       .delete_project(project._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
-    await this.ctx.model.Project
+    await ctx.model.Project
       .delete_and_release_cache(project.path)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
 
     if (project.site_id) {
@@ -160,7 +163,8 @@ class ProjectController extends Controller {
   }
 
   wrap_message(project, method) {
-    const { helper } = this.ctx;
+    const { ctx } = this;
+    const { helper } = ctx;
     return {
       topic: this.config.kafka.topics.elasticsearch,
       messages: helper.project_to_message(project, method),
@@ -169,10 +173,11 @@ class ProjectController extends Controller {
   }
 
   async send_message(project, method) {
+    const { ctx, service } = this;
     const payload = this.wrap_message(project, method);
-    await this.service.kafka.send(payload)
+    await service.kafka.send(payload)
       .catch(err => {
-        this.ctx.logger.error(err);
+        ctx.logger.error(err);
       });
   }
 }
