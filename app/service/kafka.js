@@ -31,22 +31,6 @@ class KafkaService extends Service {
     });
   }
 
-  wrap_commit_message(message, key) {
-    return {
-      topic: this.config.kafka.topics.commit,
-      messages: message,
-      key,
-    };
-  }
-
-  wrap_elasticsearch_message(message, key) {
-    return {
-      topic: this.config.kafka.topics.elasticsearch,
-      messages: message,
-      key,
-    };
-  }
-
   init_client() {
     if (!Client) {
       Client = new KafkaClient(this.config.kafka.client);

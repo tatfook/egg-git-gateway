@@ -103,9 +103,8 @@ class ProjectController extends Controller {
     });
 
     if (project.site_id) {
-      const { path, visibility } = project;
-      await this.service.es.update_site_visibilty(path, visibility)
-        .catch(err => { this.ctx.logger.error(err); });
+      const method_to_call = 'updateSiteVisibility';
+      await this.send_message(project, method_to_call);
     }
 
     this.ctx.body = {
@@ -148,9 +147,8 @@ class ProjectController extends Controller {
       });
 
     if (project.site_id) {
-      const { path } = project;
-      await this.service.es.destroy_site(path)
-        .catch(err => { this.ctx.logger.error(err); });
+      const method_to_call = 'deleteSite';
+      await this.send_message(project, method_to_call);
     }
 
     this.deleted();
@@ -159,6 +157,23 @@ class ProjectController extends Controller {
   async ensure_project_not_exist(project_path) {
     const project = await this.get_project(project_path);
     this.throw_if_exists(project, 'Project already exists');
+  }
+
+  wrap_message(project, method) {
+    const { helper } = this.ctx;
+    return {
+      topic: this.config.kafka.topics.elasticsearch,
+      messages: helper.project_to_message(project, method),
+      key: project._id,
+    };
+  }
+
+  async send_message(project, method) {
+    const payload = this.wrap_message(project, method);
+    await this.service.kafka.send(payload)
+      .catch(err => {
+        this.ctx.logger.error(err);
+      });
   }
 }
 

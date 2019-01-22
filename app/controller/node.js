@@ -40,14 +40,25 @@ class NodeController extends Controller {
     this.deleted();
   }
 
+  wrap_message(commit) {
+    const { helper } = this.ctx;
+    const key = commit.project_id;
+    const topics = this.config.kafka.topics;
+    const git_message = {
+      messages: commit._id,
+      topic: topics.commit,
+      key,
+    };
+    const es_message = {
+      messages: helper.commit_to_message(commit),
+      topic: topics.elasticsearch,
+      key,
+    };
+    return [ git_message, es_message ];
+  }
+
   async send_message(commit) {
-    const commit_id = commit._id;
-    const project_id = commit.project_id;
-    const wrapped_commit_message = this.service.kafka
-      .wrap_commit_message(commit_id, project_id);
-    const wrapped_es_message = this.service.kafka
-      .wrap_elasticsearch_message(commit.stringify, project_id);
-    const payloads = [ wrapped_commit_message, wrapped_es_message ];
+    const payloads = this.wrap_message(commit);
     await this.service.kafka.send(payloads)
       .catch(err => {
         this.ctx.logger.error(err);
