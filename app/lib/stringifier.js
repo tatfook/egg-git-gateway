@@ -31,6 +31,7 @@ const stringify_project = fast_JSON({
   properties: {
     _id: { type: 'string' },
     visibility: { type: 'string' },
+    path: { type: 'string' },
     method: { type: 'string' },
   },
 });

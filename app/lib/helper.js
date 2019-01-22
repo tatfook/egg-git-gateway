@@ -12,17 +12,18 @@ class Helper {
   }
 
   static generate_project_key(path) {
-    `project:${path}`;
+    return `project:${path}`;
   }
 
   static generate_account_key(kw_username) {
-    `account:${kw_username}`;
+    return `account:${kw_username}`;
   }
 
   static project_to_message(project, method) {
     return Stringifier.stringify_project({
       _id: project._id,
       visibility: project.visibility,
+      path: project.path,
       method,
     });
   }
