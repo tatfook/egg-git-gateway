@@ -4,22 +4,24 @@ const Controller = require('../core/base_controller');
 
 class NodeController extends Controller {
   async get_readable_project(project_path, from_cache) {
-    project_path = project_path || this.ctx.params.project_path;
+    const { ctx } = this;
+    project_path = project_path || ctx.params.project_path;
     const project = await this.get_existing_project(project_path, from_cache);
     const white_list = this.config.file.white_list;
     const must_ensure = (!(white_list.includes(project.sitename)))
       && (project.visibility === 'private');
     if (must_ensure) {
-      await this.ctx.ensurePermission(project.site_id, 'r');
+      await ctx.ensurePermission(project.site_id, 'r');
     }
     return project;
   }
 
   async get_writable_project(project_path, from_cache) {
-    project_path = project_path || this.ctx.params.project_path;
+    const { ctx } = this;
+    project_path = project_path || ctx.params.project_path;
     const project = await this.get_existing_project(project_path, from_cache);
-    if (!this.own_this_project(this.ctx.state.user.username, project_path)) {
-      await this.ctx.ensurePermission(project.site_id, 'rw');
+    if (!this.own_this_project(ctx.state.user.username, project_path)) {
+      await ctx.ensurePermission(project.site_id, 'rw');
     }
     return project;
   }
@@ -29,19 +31,21 @@ class NodeController extends Controller {
   }
 
   async clear_project() {
-    this.ctx.ensureAdmin();
+    const { ctx } = this;
+    ctx.ensureAdmin();
     const project = await this.get_project();
-    await this.ctx.model.Node
+    await ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     this.deleted();
   }
 
   wrap_message(commit) {
-    const { helper } = this.ctx;
+    const { ctx } = this;
+    const { helper } = ctx;
     const key = commit.project_id;
     const topics = this.config.kafka.topics;
     const git_message = {
@@ -58,31 +62,35 @@ class NodeController extends Controller {
   }
 
   async send_message(commit) {
+    const { ctx, service } = this;
     const payloads = this.wrap_message(commit);
-    await this.service.kafka.send(payloads)
+    await service.kafka.send(payloads)
       .catch(err => {
-        this.ctx.logger.error(err);
+        ctx.logger.error(err);
       });
   }
 
   get_file_name(path) {
-    path = path || this.ctx.params.path;
-    return this.ctx.model.Node.get_file_name(path);
+    const { ctx } = this;
+    path = path || ctx.params.path;
+    return ctx.model.Node.get_file_name(path);
   }
 
   validate_file_path(path) {
-    path = path || this.ctx.params.path;
+    const { ctx } = this;
+    path = path || ctx.params.path;
     const pattern = /\.[^\.]+$/;
-    if (!pattern.test(path)) { this.ctx.throw(400, 'Path of the file must end with .xxx'); }
+    if (!pattern.test(path)) { ctx.throw(400, 'Path of the file must end with .xxx'); }
   }
 
   async get_node(project_id, path, from_cache) {
-    path = path || this.ctx.params.path;
-    const node = await this.ctx.model.Node
+    const { ctx } = this;
+    path = path || ctx.params.path;
+    const node = await ctx.model.Node
       .get_by_path(project_id, path, from_cache)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     return node;
   }
@@ -114,35 +122,40 @@ class NodeController extends Controller {
   }
 
   ensure_unique(files) {
+    const { ctx } = this;
     const exist_paths = {};
     const errMsg = 'Reduplicative files exist in your request';
     for (const file of files) {
-      if (exist_paths[file.path]) { this.ctx.throw(409, errMsg); }
+      if (exist_paths[file.path]) { ctx.throw(409, errMsg); }
       exist_paths[file.path] = true;
     }
   }
 
   async ensure_parent_exist(account_id, project_id, path) {
-    path = path || this.ctx.params.path;
-    await this.ctx.model.Node
+    const { ctx } = this;
+    path = path || ctx.params.path;
+    await ctx.model.Node
       .ensure_parent_exist(account_id, project_id, path)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
   }
 
   async ensure_parents_exist(account_id, project_id, files) {
+    const { ctx } = this;
     for (const file of files) {
-      await this.ctx.model.Node.ensure_parent_exist(account_id, project_id, file.path);
+      await ctx.model.Node.ensure_parent_exist(
+        account_id, project_id, file.path
+      );
     }
   }
 
   get_commit_options(project) {
     const { ctx } = this;
     return {
-      commit_message: ctx.request.body.commit_message,
-      encoding: ctx.request.body.encoding,
+      commit_message: ctx.params.commit_message,
+      encoding: ctx.params.encoding,
       author: ctx.state.user.username,
       visibility: project.visibility,
     };

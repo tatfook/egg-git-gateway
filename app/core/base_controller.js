@@ -1,15 +1,15 @@
 'use strict';
 
 const Controller = require('egg').Controller;
-const { empty } = require('../lib/helper');
 
 class Base_controllerController extends Controller {
   async get_account(query) {
-    const account = await this.ctx.model.Account
+    const { ctx } = this;
+    const account = await ctx.model.Account
       .get_by_query(query)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     return account;
   }
@@ -21,12 +21,13 @@ class Base_controllerController extends Controller {
   }
 
   async get_project(project_path, from_cache) {
-    project_path = project_path || this.ctx.params.project_path;
-    const project = await this.ctx.model.Project
+    const { ctx } = this;
+    project_path = project_path || ctx.params.project_path;
+    const project = await ctx.model.Project
       .get_by_path(project_path, from_cache)
       .catch(err => {
-        this.ctx.logger.error(err);
-        this.ctx.throw(500);
+        ctx.logger.error(err);
+        ctx.throw(500);
       });
     return project;
   }
@@ -38,16 +39,17 @@ class Base_controllerController extends Controller {
   }
 
   throw_if_exists(object, errMsg) {
-    if (!empty(object)) { this.ctx.throw(409, errMsg); }
+    const { ctx } = this;
+    if (!ctx.helper.empty(object)) { ctx.throw(409, errMsg); }
   }
 
   throw_if_not_exist(object, errMsg) {
-    if (empty(object)) { this.ctx.throw(404, errMsg); }
+    const { ctx } = this;
+    if (ctx.helper.empty(object)) { ctx.throw(404, errMsg); }
   }
 
   success(action = 'success') {
-    this.ctx.body = {};
-    this.ctx.body[action] = true;
+    this.ctx.body = { [action]: true };
   }
 
   created() {

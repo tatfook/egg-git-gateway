@@ -324,8 +324,8 @@ module.exports = app => {
       if (!Helper.empty(folder)) {
         await folder.remove()
           .catch(err => {
-            this.ctx.logger.error(err);
-            this.ctx.throw(500);
+            logger.error(err);
+            throw err;
           });
       }
     }

@@ -75,7 +75,7 @@ class FileController extends Controller {
     const { ctx } = this;
     const project = await this.get_readable_project();
     const path = ctx.params.path;
-    const from_cache = !ctx.query.refresh_cache;
+    const from_cache = !ctx.params.refresh_cache;
     let file = await this.get_node(project._id, path, from_cache);
     if (empty(file)) { file = await this.load_from_gitlab(project); }
     ctx.body = { content: file.content || '' };
@@ -102,7 +102,7 @@ class FileController extends Controller {
       .get_parents_not_exist(project.account_id, project._id, path);
     let file = {
       name: this.get_file_name(path),
-      content: ctx.request.body.content,
+      content: ctx.params.content,
       path,
       project_id: project._id,
       account_id: project.account_id,
@@ -133,7 +133,7 @@ class FileController extends Controller {
     const { ctx } = this;
     ctx.validate(create_many_rule);
     const project = await this.get_writable_project();
-    let files = ctx.request.body.files;
+    let files = ctx.params.files;
     this.ensure_unique(files);
     await this.ensure_nodes_not_exist(project._id, files);
     const ancestors_to_create = await ctx.model.Node
@@ -181,7 +181,7 @@ class FileController extends Controller {
     const path = ctx.params.path;
     const project = await this.get_writable_project();
     const file = await this.get_existing_node(project._id, path, false);
-    file.set({ content: ctx.request.body.content });
+    file.set({ content: ctx.params.content });
 
     await file.save().catch(err => {
       ctx.logger.error(err);
@@ -224,7 +224,7 @@ class FileController extends Controller {
       });
 
     const commit_options = {
-      commit_message: ctx.request.body.commit_message,
+      commit_message: ctx.params.commit_message,
       author: ctx.state.user.username,
       visibility: project.visibility,
     };
@@ -255,13 +255,13 @@ class FileController extends Controller {
     const { ctx } = this;
     ctx.validate(move_rule);
     const previous_path = ctx.params.path;
-    const new_path = ctx.params.path = ctx.request.body.new_path;
+    const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.get_writable_project();
     const file = await this.get_existing_node(project._id, previous_path, false);
     await this.ensure_node_not_exist(project._id, new_path);
     await this.ensure_parent_exist(project.account_id, project._id, new_path);
 
-    const content = ctx.request.body.content;
+    const content = ctx.params.content;
     if (content) { file.content = content; }
     file.previous_path = previous_path;
     file.path = new_path;
@@ -292,9 +292,9 @@ class FileController extends Controller {
   }
 
   async load_from_gitlab(project) {
-    const { ctx } = this;
+    const { ctx, service } = this;
     if (!project) { project = await this.get_existing_project(); }
-    const file = await this.service.gitlab
+    const file = await service.gitlab
       .load_raw_file(project.git_path, ctx.params.path)
       .catch(err => {
         ctx.logger.error(err);
@@ -326,7 +326,7 @@ class FileController extends Controller {
       .get_parents_not_exist(project.account_id, project._id, path);
     const file = {
       name: this.get_file_name(path),
-      content: ctx.request.body.content,
+      content: ctx.params.content,
       path,
       project_id: project._id,
       account_id: project.account_id,
@@ -346,7 +346,7 @@ class FileController extends Controller {
     ctx.ensureAdmin();
     ctx.validate(create_many_rule);
     const project = await this.get_project();
-    const files = ctx.request.body.files;
+    const files = ctx.params.files;
     this.ensure_unique(files);
     const ancestors_to_create = await ctx.model.Node
       .get_parents_not_exist(project.account_id, project._id, files);

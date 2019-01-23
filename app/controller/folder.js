@@ -85,7 +85,7 @@ class FolderController extends Controller {
     subfiles.push(folder);
 
     const commit_options = {
-      commit_message: ctx.request.body.commit_message ||
+      commit_message: ctx.params.commit_message ||
         `${ctx.state.user.username} delete folder ${folder.path}`,
       author: ctx.state.user.username,
       visibility: project.visibility,
@@ -124,7 +124,7 @@ class FolderController extends Controller {
     const { ctx } = this;
     ctx.validate(move_rule);
     const previous_path = ctx.params.path;
-    const new_path = ctx.params.path = ctx.request.body.new_path;
+    const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.get_writable_project();
     const folder = await this.get_existing_node(project._id, previous_path, false);
     await this.ensure_node_not_exist(project._id, new_path);
