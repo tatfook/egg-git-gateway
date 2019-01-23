@@ -265,6 +265,7 @@ class FileController extends Controller {
     if (content) { file.content = content; }
     file.previous_path = previous_path;
     file.path = new_path;
+    file.previous_name = file.name;
     file.name = this.get_file_name();
 
     await ctx.model.Node

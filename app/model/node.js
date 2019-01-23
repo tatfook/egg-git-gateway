@@ -28,7 +28,9 @@ module.exports = app => {
   const statics = NodeSchema.statics;
 
   NodeSchema.virtual('tree_path').get(function() {
-    return statics.get_tree_path(this.path, this.name);
+    const path = this.previous_path || this.path;
+    const name = this.previous_name || this.name;
+    return statics.get_tree_path(path, name);
   });
 
   statics.get_file_name = function(path) {
@@ -38,9 +40,11 @@ module.exports = app => {
   };
 
   statics.get_tree_path = function(path, file_name) {
+    console.log(path, file_name);
     if (!file_name) { file_name = this.get_file_name(path); }
     const file_name_pattern = new RegExp(`/${file_name}$`, 'u');
     const tree_path = path.replace(file_name_pattern, '');
+    console.log(tree_path);
     return tree_path;
   };
 
@@ -65,7 +69,8 @@ module.exports = app => {
   };
 
   statics.release_content_cache = function(file, pipeline = redis.pipeline()) {
-    const key = Helper.generate_file_key(file.project_id, file.path);
+    const path = file.previous_path || file.path;
+    const key = Helper.generate_file_key(file.project_id, path);
     pipeline.del(key);
   };
 
@@ -105,19 +110,18 @@ module.exports = app => {
       file.project_id = file.project_id || project_id;
       const file_key = Helper.generate_file_key(
         file.project_id || project_id,
-        file.path
+        file.previous_path || file.path
       );
       keys_to_release.push(file_key);
 
       if (file.type === 'tree') {
         const tree_key = Helper.generate_tree_key(
           file.project_id || project_id,
-          file.path
+          file.previous_path || file.path
         );
         keys_to_release.push(tree_key);
       }
     }
-    console.log(keys_to_release);
     pipeline.del(keys_to_release);
     return pipeline;
   };
@@ -147,11 +151,7 @@ module.exports = app => {
   };
 
   statics.move = async function(file) {
-    const pipeline = this.release_cache({
-      project_id: file.project_id,
-      path: file.previous_path,
-      tree_path: file.tree_path,
-    });
+    const pipeline = this.release_cache(file);
     await pipeline.exec()
       .catch(err => {
         logger.error(err);

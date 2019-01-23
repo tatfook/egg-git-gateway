@@ -132,6 +132,7 @@ class FolderController extends Controller {
 
     folder.path = new_path;
     folder.previous_path = previous_path;
+    folder.previous_name = folder.name;
     folder.name = this.get_file_name();
 
     const subfiles = await ctx.model.Node
