@@ -60,11 +60,11 @@ class AccountController extends Controller {
     ctx.validate(create_rule);
     const kw_username = ctx.params.username;
     await this.ensure_account_not_exist({ kw_username });
-    const account_prifix = config.gitlab.account_prifix;
+    const account_prefix = config.gitlab.account_prefix;
     const email_postfix = config.gitlab.email_postfix;
     const account = await service.gitlab
       .create_account({
-        username: `${account_prifix}${kw_username}`,
+        username: `${account_prefix}${kw_username}`,
         name: kw_username,
         password: `kw${ctx.params.password}`,
         email: `${kw_username}${email_postfix}`,
