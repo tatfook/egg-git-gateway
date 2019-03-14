@@ -29,6 +29,11 @@ exports.parameters = {
   package: 'egg-parameters',
 };
 
+exports.grpc = {
+  enable: true,
+  package: 'egg-grpc',
+};
+
 // exports.jwt = {
 //   enable: true,
 //   package: 'egg-jwt',
