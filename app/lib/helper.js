@@ -54,6 +54,14 @@ class Helper {
     const skip = (page - 1) * limit;
     return { skip, limit };
   }
+
+  static* cycleInt(lt, gte = 0) {
+    let current = gte;
+    while (true) {
+      yield current;
+      current = (current + 1) % lt;
+    }
+  }
 }
 
 module.exports = Helper;
