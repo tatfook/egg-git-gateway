@@ -5,13 +5,7 @@ const Controller = require('egg').Controller;
 class Base_controllerController extends Controller {
   async getAccount(query) {
     const { ctx } = this;
-    const account = await ctx.model.Account
-      .findOne(query)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-    return account;
+    return await ctx.model.Account.findOne(query);
   }
 
   async getExistsAccount(query) {
@@ -40,12 +34,12 @@ class Base_controllerController extends Controller {
 
   throwIfExists(object, errMsg) {
     const { ctx } = this;
-    if (!ctx.helper.empty(object)) { ctx.throw(409, errMsg); }
+    if (!ctx.helper.isEmpty(object)) ctx.throw(409, errMsg);
   }
 
   throwIfNotExist(object, errMsg) {
     const { ctx } = this;
-    if (ctx.helper.empty(object)) { ctx.throw(404, errMsg); }
+    if (ctx.helper.isEmpty(object)) ctx.throw(404, errMsg);
   }
 
   success(action = 'success') {

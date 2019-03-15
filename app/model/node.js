@@ -129,7 +129,7 @@ module.exports = app => {
   statics.get_by_path_from_db = async function(project_id, path) {
     const file = await this.findOne({ project_id, path })
       .catch(err => { logger.error(err); });
-    if (!Helper.empty(file)) {
+    if (!Helper.isEmpty(file)) {
       const pipeline = this.cache(file);
       await pipeline.exec()
         .catch(err => {
@@ -144,7 +144,7 @@ module.exports = app => {
     let file;
     if (from_cache) {
       file = await this.load_content_cache_by_path(project_id, path);
-      if (!Helper.empty(file)) { return file; }
+      if (!Helper.isEmpty(file)) { return file; }
     }
     file = await this.get_by_path_from_db(project_id, path);
     return file;
@@ -215,7 +215,7 @@ module.exports = app => {
         tree = await this.load_tree_cache_by_path(project_id, path);
       }
     }
-    if (Helper.empty(tree)) {
+    if (Helper.isEmpty(tree)) {
       tree = await this.get_tree_by_path_from_db(project_id, path, recursive, pagination);
     }
     return tree;
@@ -232,7 +232,7 @@ module.exports = app => {
       node_name = ancestor_names[i];
       if (ancestors_to_create[path] || ancestors_already_exist[path]) { continue; }
       const parent = await this.get_by_path_from_db(project_id, path);
-      if (Helper.empty(parent)) {
+      if (Helper.isEmpty(parent)) {
         ancestors_to_create[path] = {
           name: node_name,
           type: 'tree',
@@ -304,7 +304,7 @@ module.exports = app => {
           throw err;
         });
     }
-    if (Helper.empty(subfiles)) { return; }
+    if (Helper.isEmpty(subfiles)) { return; }
 
     const pipeline = this.release_multi_files_cache(subfiles, project_id);
     await pipeline.exec()
@@ -321,7 +321,7 @@ module.exports = app => {
 
     if (remove_self) {
       const folder = subfiles[subfiles.length - 1];
-      if (!Helper.empty(folder)) {
+      if (!Helper.isEmpty(folder)) {
         await folder.remove()
           .catch(err => {
             logger.error(err);
@@ -333,7 +333,7 @@ module.exports = app => {
 
   statics.delete_and_release_by_query = async function(query) {
     const files = await this.find(query).limit(99999999);
-    if (Helper.empty(files)) { return; }
+    if (Helper.isEmpty(files)) { return; }
     const pipeline = await this.release_multi_files_cache(files);
     await pipeline.exec();
     await this.deleteMany(query);

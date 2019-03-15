@@ -25,8 +25,9 @@ class ProjectController extends Controller {
   async exist() {
     const { ctx } = this;
     ctx.ensureAdmin();
-    const project = await this.getProject(ctx.params.path);
-    if (ctx.helper.empty(project)) {
+    const { path } = ctx.params;
+    const project = await this.getProject(path);
+    if (ctx.helper.isEmpty(project)) {
       ctx.body = 0;
     } else {
       ctx.body = 1;

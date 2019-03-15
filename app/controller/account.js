@@ -20,7 +20,7 @@ class AccountController extends Controller {
   */
   async create() {
     const { ctx, service, config } = this;
-    // ctx.ensureAdmin();
+    ctx.ensureAdmin();
     ctx.validate(create_rule);
     const { id, username } = ctx.params;
     await this.ensureAccountNotExist({ _id: id });

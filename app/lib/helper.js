@@ -1,6 +1,7 @@
 'use strict';
 
 const Stringifier = require('./stringifier');
+const _ = require('lodash/lang');
 
 class Helper {
   static generate_file_key(project_id, path) {
@@ -40,12 +41,12 @@ class Helper {
     return Stringifier.stringify_tree(tree);
   }
 
-  static empty(obj) {
-    if (!obj) { return true; }
-    if (Object.keys(obj).length === 0) {
-      return true;
-    }
-    return false;
+  static isEmpty(value) {
+    return _.isEmpty(value);
+  }
+
+  static not(obj) {
+    return (obj === undefined) || (obj === null);
   }
 
   static paginate(query) {
