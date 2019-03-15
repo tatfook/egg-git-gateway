@@ -25,7 +25,7 @@ class ProjectController extends Controller {
   async exist() {
     const { ctx } = this;
     ctx.ensureAdmin();
-    const project = await this.get_project(ctx.params.path);
+    const project = await this.getProject(ctx.params.path);
     if (ctx.helper.empty(project)) {
       ctx.body = 0;
     } else {
@@ -53,7 +53,7 @@ class ProjectController extends Controller {
     const kw_username = ctx.params.kw_username;
     const sitename = ctx.params.sitename;
     const project_path = `${kw_username}/${sitename}`;
-    const account = await this.get_existing_account({ kw_username });
+    const account = await this.getExistsAccount({ kw_username });
     await this.ensure_project_not_exist(project_path);
     const project = await service.gitlab
       .create_project({
@@ -90,7 +90,7 @@ class ProjectController extends Controller {
     const { ctx, service } = this;
     ctx.ensureAdmin();
     ctx.validate(update_visibility_rule);
-    const project = await this.get_existing_project(ctx.params.path, false);
+    const project = await this.getExistsProject(ctx.params.path, false);
     project.visibility = ctx.params.visibility;
     await service.gitlab
       .update_project_visibility(project._id, project.visibility)
@@ -127,7 +127,7 @@ class ProjectController extends Controller {
   async remove() {
     const { ctx, service } = this;
     ctx.ensureAdmin();
-    const project = await this.get_existing_project(ctx.params.path, false);
+    const project = await this.getExistsProject(ctx.params.path, false);
     await ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
@@ -158,8 +158,8 @@ class ProjectController extends Controller {
   }
 
   async ensure_project_not_exist(project_path) {
-    const project = await this.get_project(project_path);
-    this.throw_if_exists(project, 'Project already exists');
+    const project = await this.getProject(project_path);
+    this.throwIfExists(project, 'Project already exists');
   }
 
   wrap_message(project, method) {

@@ -3,10 +3,10 @@
 const Controller = require('egg').Controller;
 
 class Base_controllerController extends Controller {
-  async get_account(query) {
+  async getAccount(query) {
     const { ctx } = this;
     const account = await ctx.model.Account
-      .get_by_query(query)
+      .findOne(query)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
@@ -14,13 +14,13 @@ class Base_controllerController extends Controller {
     return account;
   }
 
-  async get_existing_account(query) {
-    const account = await this.get_account(query);
-    this.throw_if_not_exist(account, 'Account not found');
+  async getExistsAccount(query) {
+    const account = await this.getAccount(query);
+    this.throwIfNotExist(account, 'Account not found');
     return account;
   }
 
-  async get_project(project_path, from_cache) {
+  async getProject(project_path, from_cache) {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
     const project = await ctx.model.Project
@@ -32,18 +32,18 @@ class Base_controllerController extends Controller {
     return project;
   }
 
-  async get_existing_project(project_path, from_cache) {
-    const project = await this.get_project(project_path, from_cache);
-    this.throw_if_not_exist(project, 'Project not found');
+  async getExistsProject(project_path, from_cache) {
+    const project = await this.getProject(project_path, from_cache);
+    this.throwIfNotExist(project, 'Project not found');
     return project;
   }
 
-  throw_if_exists(object, errMsg) {
+  throwIfExists(object, errMsg) {
     const { ctx } = this;
     if (!ctx.helper.empty(object)) { ctx.throw(409, errMsg); }
   }
 
-  throw_if_not_exist(object, errMsg) {
+  throwIfNotExist(object, errMsg) {
     const { ctx } = this;
     if (ctx.helper.empty(object)) { ctx.throw(404, errMsg); }
   }
@@ -67,6 +67,12 @@ class Base_controllerController extends Controller {
 
   moved() {
     this.success('moved');
+  }
+
+  error(err) {
+    const { ctx } = this;
+    ctx.error(err);
+    ctx.throw(err);
   }
 }
 

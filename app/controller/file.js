@@ -294,7 +294,7 @@ class FileController extends Controller {
 
   async load_from_gitlab(project) {
     const { ctx, service } = this;
-    if (!project) { project = await this.get_existing_project(); }
+    if (!project) { project = await this.getExistsProject(); }
     const file = await service.gitlab
       .load_raw_file(project.git_path, ctx.params.path)
       .catch(err => {
@@ -321,7 +321,7 @@ class FileController extends Controller {
     ctx.ensureAdmin();
     ctx.validate(create_rule);
     const path = ctx.params.path;
-    const project = await this.get_project();
+    const project = await this.getProject();
     await this.ensure_node_not_exist(project._id, path);
     const ancestors_to_create = await ctx.model.Node
       .get_parents_not_exist(project.account_id, project._id, path);
@@ -346,7 +346,7 @@ class FileController extends Controller {
     const { ctx } = this;
     ctx.ensureAdmin();
     ctx.validate(create_many_rule);
-    const project = await this.get_project();
+    const project = await this.getProject();
     const files = ctx.params.files;
     this.ensure_unique(files);
     const ancestors_to_create = await ctx.model.Node

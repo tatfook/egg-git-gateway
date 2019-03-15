@@ -6,7 +6,7 @@ class NodeController extends Controller {
   async get_readable_project(project_path, from_cache) {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
-    const project = await this.get_existing_project(project_path, from_cache);
+    const project = await this.getExistsProject(project_path, from_cache);
     const white_list = this.config.file.white_list;
     const must_ensure = (!(white_list.includes(project.sitename)))
       && (project.visibility === 'private');
@@ -19,7 +19,7 @@ class NodeController extends Controller {
   async get_writable_project(project_path, from_cache) {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
-    const project = await this.get_existing_project(project_path, from_cache);
+    const project = await this.getExistsProject(project_path, from_cache);
     if (!this.own_this_project(ctx.state.user.username, project_path)) {
       await ctx.ensurePermission(project.site_id, 'rw');
     }
@@ -33,7 +33,7 @@ class NodeController extends Controller {
   async clear_project() {
     const { ctx } = this;
     ctx.ensureAdmin();
-    const project = await this.get_project();
+    const project = await this.getProject();
     await ctx.model.Node
       .delete_project(project._id)
       .catch(err => {
@@ -102,11 +102,11 @@ class NodeController extends Controller {
   }
 
   throw_if_node_not_exist(node) {
-    this.throw_if_not_exist(node, 'File or folder not found');
+    this.throwIfNotExist(node, 'File or folder not found');
   }
 
   throw_if_node_exists(node) {
-    this.throw_if_exists(node, 'File or folder already exists');
+    this.throwIfExists(node, 'File or folder already exists');
   }
 
   async ensure_node_not_exist(project_id, path, from_cache) {
