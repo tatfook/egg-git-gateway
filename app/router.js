@@ -9,11 +9,11 @@ module.exports = app => {
   const url_prefix = app.config.url_prefix;
   if (url_prefix) { router.prefix(url_prefix); }
 
-  router.get('home', '/', controller.home.index);
+  const { account, home } = controller;
 
-  router.get('/accounts', controller.account.show);
-  router.post('/accounts', controller.account.create);
-  router.del('/accounts/:kw_username', controller.account.remove);
+  router.get('home', '/', home.index);
+
+  router.resources('/accounts', account);
 
   router.post('/projects/user/:kw_username', controller.project.create);
   router.put('/projects/:path/visibility', controller.project.update_visibility);

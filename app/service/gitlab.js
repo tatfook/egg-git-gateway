@@ -51,7 +51,7 @@ class GitlabService extends Service {
     };
   }
 
-  async get_account(username) {
+  async getAccount(username) {
     const res = await this.client
       .get(`/users?username=${username}`)
       .catch(err => {
@@ -74,7 +74,7 @@ class GitlabService extends Service {
       })
       .catch(async err => {
         if (err.response.status === 409) {
-          registered_account = await this.get_account(user.username);
+          registered_account = await this.getAccount(user.username);
           return;
         }
         this.app.logger.error(`failed to create git account for ${user.username}`);
