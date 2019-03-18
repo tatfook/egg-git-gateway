@@ -14,15 +14,11 @@ class Base_controllerController extends Controller {
     return account;
   }
 
-  async getProject(project_path, from_cache) {
+  async getProject(path, from_cache) {
     const { ctx } = this;
-    project_path = project_path || ctx.params.project_path;
+    path = path || ctx.params.project_path;
     const project = await ctx.model.Project
-      .get_by_path(project_path, from_cache)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .getByPath(path, from_cache);
     return project;
   }
 

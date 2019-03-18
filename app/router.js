@@ -9,16 +9,16 @@ module.exports = app => {
   const url_prefix = app.config.url_prefix;
   if (url_prefix) { router.prefix(url_prefix); }
 
-  const { account, home } = controller;
+  const { account, home, project } = controller;
 
   router.get('home', '/', home.index);
 
   router.resources('/accounts', account);
 
-  router.post('/projects/user/:kw_username', controller.project.create);
-  router.put('/projects/:path/visibility', controller.project.update_visibility);
-  router.del('/projects/:path', controller.project.remove);
-  router.get('/projects/:path/exist', controller.project.exist);
+  router.post('/projects/user/:username', project.create);
+  router.put('/projects/:path/visibility', project.updateVisibility);
+  router.del('/projects/:path', project.destroy);
+  router.get('/projects/:path/exist', project.exist);
 
   router.get('/projects/:project_path/tree/:path', controller.tree.show);
   router.get('/projects/:project_path/tree/', controller.tree.root);
