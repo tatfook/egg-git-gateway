@@ -105,7 +105,7 @@ class FolderController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.deleted();
   }
 
@@ -164,7 +164,7 @@ class FolderController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.moved();
   }
 }

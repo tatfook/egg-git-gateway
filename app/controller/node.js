@@ -43,7 +43,7 @@ class NodeController extends Controller {
     this.deleted();
   }
 
-  wrap_message(commit) {
+  formatMsg(commit) {
     const { ctx } = this;
     const { helper } = ctx;
     const key = commit.project_id;
@@ -54,16 +54,16 @@ class NodeController extends Controller {
       key,
     };
     const es_message = {
-      messages: helper.commit_to_message(commit),
+      messages: helper.commit2Msg(commit),
       topic: topics.elasticsearch,
       key,
     };
     return [ git_message, es_message ];
   }
 
-  async send_message(commit) {
+  async sendMsg(commit) {
     const { ctx, service } = this;
-    const payloads = this.wrap_message(commit);
+    const payloads = this.formatMsg(commit);
     await service.kafka.send(payloads)
       .catch(err => {
         ctx.logger.error(err);

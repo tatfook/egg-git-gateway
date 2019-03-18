@@ -20,7 +20,7 @@ class Helper {
     return `account:${kw_username}`;
   }
 
-  static project_to_message(project, method) {
+  static project2Msg(project, method) {
     return Stringifier.stringify_project({
       _id: project._id,
       visibility: project.visibility,
@@ -29,7 +29,7 @@ class Helper {
     });
   }
 
-  static commit_to_message(commit) {
+  static commit2Msg(commit) {
     return Stringifier.stringify_commit(commit);
   }
 

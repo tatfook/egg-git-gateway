@@ -125,7 +125,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.created();
   }
 
@@ -160,7 +160,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.created();
   }
 
@@ -196,7 +196,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.updated();
   }
 
@@ -235,7 +235,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.deleted();
   }
 
@@ -282,7 +282,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.sendMsg(commit);
     this.moved();
   }
 

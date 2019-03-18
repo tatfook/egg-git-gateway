@@ -47,7 +47,7 @@ class GitalyService extends Service {
     return repository;
   }
 
-  async deleteRepository(storage_name, namespace, repo_name) {
+  async cleanRepository(storage_name, namespace, repo_name) {
     const repository = formatRepo(storage_name, namespace, repo_name);
     await this.client.repositoryService
       .cleanup({ repository }, this.auth_meta, {});
