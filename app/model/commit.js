@@ -12,7 +12,7 @@ class CommitFormatter {
     };
   }
 
-  static format_create_action(file, options) {
+  static formatCreateAction(file, options) {
     return {
       _id: file._id,
       action: 'create',
@@ -22,7 +22,7 @@ class CommitFormatter {
     };
   }
 
-  static format_update_action(file, options) {
+  static formatUpdateAction(file, options) {
     return {
       _id: file._id,
       action: 'update',
@@ -32,7 +32,7 @@ class CommitFormatter {
     };
   }
 
-  static format_delete_action(file) {
+  static formatDeleteAction(file) {
     const file_path = file.path;
     return {
       _id: file._id,
@@ -41,7 +41,7 @@ class CommitFormatter {
     };
   }
 
-  static format_move_action(file, options) {
+  static formatMoveAction(file, options) {
     return {
       _id: file._id,
       action: 'move',
@@ -52,7 +52,7 @@ class CommitFormatter {
     };
   }
 
-  static format_actions(files, action_formatter, options) {
+  static formatActions(files, action_formatter, options) {
     let actions;
     if (files instanceof Array) {
       actions = [];
@@ -66,32 +66,32 @@ class CommitFormatter {
     return actions;
   }
 
-  static create_file(files, project_id, options) {
-    const actions = this.format_actions(files, this.format_create_action, options);
+  static createFile(files, project_id, options) {
+    const actions = this.formatActions(files, this.formatCreateAction, options);
     let default_message = `${options.author} create file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} create files`; }
     options.commit_message = options.commit_message || default_message;
     return this.output(actions, project_id, options);
   }
 
-  static update_file(files, project_id, options) {
-    const actions = this.format_actions(files, this.format_update_action, options);
+  static updateFile(files, project_id, options) {
+    const actions = this.formatActions(files, this.formatUpdateAction, options);
     let default_message = `${options.author} update file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} update files`; }
     options.commit_message = options.commit_message || default_message;
     return this.output(actions, project_id, options);
   }
 
-  static delete_file(files, project_id, options) {
-    const actions = this.format_actions(files, this.format_delete_action, options);
+  static deleteFile(files, project_id, options) {
+    const actions = this.formatActions(files, this.formatDeleteAction, options);
     let default_message = `${options.author} delete file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} delete files`; }
     options.commit_message = options.commit_message || default_message;
     return this.output(actions, project_id, options);
   }
 
-  static move_file(files, project_id, options) {
-    const actions = this.format_actions(files, this.format_move_action, options);
+  static moveFile(files, project_id, options) {
+    const actions = this.formatActions(files, this.formatMoveAction, options);
     let default_message =
       `${options.author} move file from ${files.previous_path} to ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} move files`; }
@@ -125,8 +125,8 @@ module.exports = app => {
 
   const statics = CommitSchema.statics;
 
-  statics.create_file = function(files, project_id, options) {
-    const commit = CommitFormatter.create_file(files, project_id, options);
+  statics.createFile = function(files, project_id, options) {
+    const commit = CommitFormatter.createFile(files, project_id, options);
     return this.create(commit)
       .catch(err => {
         logger.error(`failed to create commit ${commit}`);
@@ -134,8 +134,8 @@ module.exports = app => {
       });
   };
 
-  statics.update_file = function(files, project_id, options) {
-    const commit = CommitFormatter.update_file(files, project_id, options);
+  statics.updateFile = function(files, project_id, options) {
+    const commit = CommitFormatter.updateFile(files, project_id, options);
     return this.create(commit)
       .catch(err => {
         logger.error(`failed to create commit ${commit}`);
@@ -143,8 +143,8 @@ module.exports = app => {
       });
   };
 
-  statics.delete_file = function(files, project_id, options) {
-    const commit = CommitFormatter.delete_file(files, project_id, options);
+  statics.deleteFile = function(files, project_id, options) {
+    const commit = CommitFormatter.deleteFile(files, project_id, options);
     return this.create(commit)
       .catch(err => {
         logger.error(`failed to create commit ${commit}`);
@@ -152,8 +152,8 @@ module.exports = app => {
       });
   };
 
-  statics.move_file = function(files, project_id, options) {
-    const commit = CommitFormatter.move_file(files, project_id, options);
+  statics.moveFile = function(files, project_id, options) {
+    const commit = CommitFormatter.moveFile(files, project_id, options);
     return this.create(commit)
       .catch(err => {
         logger.error(`failed to create commit ${commit}`);

@@ -1,6 +1,6 @@
 'use strict';
 
-const { empty } = require('../lib/helper');
+const { isEmpty } = require('../lib/helper');
 
 const isAdmin = user => {
   return user.roleId === 10;
@@ -10,7 +10,7 @@ module.exports = {
   veryfy() {
     let errMsg;
     this.state = this.state || {};
-    if (empty(this.state.user)) {
+    if (isEmpty(this.state.user)) {
       errMsg = 'Valid authorization token was required';
     } else if (!this.state.user.userId || !this.state.user.username) {
       errMsg = 'Invalid token';
@@ -32,7 +32,7 @@ module.exports = {
     const errMsg = 'Not allowed to access this protected resource';
     this.state = this.state || {};
     this.state.user = this.state.user || {};
-    const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
+    const not_permitted = isEmpty(this.state.user) || !isAdmin(this.state.user);
     if (not_permitted) { this.throw(403, errMsg); }
   },
 };

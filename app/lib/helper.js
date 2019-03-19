@@ -2,6 +2,7 @@
 
 const Stringifier = require('./stringifier');
 const _ = require('lodash/lang');
+const path_helper = require('path').posix;
 
 class Helper {
   static generate_file_key(project_id, path) {
@@ -45,10 +46,6 @@ class Helper {
     return _.isEmpty(value);
   }
 
-  static not(obj) {
-    return (obj === undefined) || (obj === null);
-  }
-
   static paginate(query) {
     const limit = Number(query.per_page) || 10000;
     const page = Number(query.page) || 1;
@@ -62,6 +59,18 @@ class Helper {
       yield current;
       current = (current + 1) % lt;
     }
+  }
+
+  static getNodeName(path) {
+    return path_helper.basename(path);
+  }
+
+  static getParentPath(path) {
+    return path_helper.dirname(path);
+  }
+
+  static parsePath(path) {
+    return path_helper.parse(path);
   }
 }
 
