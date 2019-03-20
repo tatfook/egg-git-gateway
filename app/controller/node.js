@@ -2,47 +2,59 @@
 
 const Controller = require('../core/base_controller');
 
+const folder_type = 'tree';
+const file_type = 'blob';
+const invisible = 'private';
+const read = 'r';
+const readWrite = 'rw';
+const error_msgs = {
+  not_file: 'Not a file',
+  not_folder: 'Not a folder',
+  node_exists: 'File or folder already exists',
+  not_node: 'File or folder not found',
+  not_file_path: 'Path of the file must end with .xxx',
+  reduplicate: 'Reduplicate files exist in your request',
+};
+
 class NodeController extends Controller {
-  async get_readable_project(project_path, from_cache) {
+  // check read permission if a project is invisible and not
+  // in the white list
+  async getReadableProject(project_path, from_cache) {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
     const project = await this.getExistsProject(project_path, from_cache);
     const white_list = this.config.file.white_list;
     const must_ensure = (!(white_list.includes(project.sitename)))
-      && (project.visibility === 'private');
-    if (must_ensure) {
-      await ctx.ensurePermission(project.site_id, 'r');
-    }
+      && (project.visibility === invisible);
+    if (must_ensure) await ctx.ensurePermission(project.site_id, read);
     return project;
   }
 
-  async get_writable_project(project_path, from_cache) {
+  // check write permission if a project is invisible and not
+  // in the white list
+  async getWritableProject(project_path, from_cache) {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
     const project = await this.getExistsProject(project_path, from_cache);
-    if (!this.own_this_project(ctx.state.user.username, project_path)) {
-      await ctx.ensurePermission(project.site_id, 'rw');
+    if (!this.ownThisProject(ctx.state.user.username, project_path)) {
+      await ctx.ensurePermission(project.site_id, readWrite);
     }
     return project;
   }
 
-  own_this_project(username, project_path) {
+  ownThisProject(username, project_path) {
     return project_path.startsWith(`${username}/`);
   }
 
-  async clear_project() {
+  async clearProject() {
     const { ctx } = this;
     ctx.ensureAdmin();
     const project = await this.getProject();
-    await ctx.model.Node
-      .delete_project(project._id)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    await ctx.model.Node.delete_project(project._id);
     this.deleted();
   }
 
+  // format messages that will be sent to kafka
   formatMsg(commit) {
     const { ctx } = this;
     const { helper } = ctx;
@@ -61,97 +73,104 @@ class NodeController extends Controller {
     return [ git_message, es_message ];
   }
 
+  // send messages to kafka
   async sendMsg(commit) {
-    const { ctx, service } = this;
-    const payloads = this.formatMsg(commit);
-    await service.kafka.send(payloads)
-      .catch(err => {
-        ctx.logger.error(err);
-      });
+    console.log(commit);
+    // const { ctx, service } = this;
+    // const payloads = this.formatMsg(commit);
+    // await service.kafka.send(payloads)
+    //   .catch(err => {
+    //     ctx.logger.error(err);
+    //   });
   }
 
-  get_file_name(path) {
+  getNodeName(path) {
     const { ctx } = this;
     path = path || ctx.params.path;
-    return ctx.model.Node.get_file_name(path);
+    return ctx.helper.getNodeName(path);
   }
 
-  validate_file_path(path) {
+  getParentPath(path) {
     const { ctx } = this;
     path = path || ctx.params.path;
-    const pattern = /\.[^\.]+$/;
-    if (!pattern.test(path)) { ctx.throw(400, 'Path of the file must end with .xxx'); }
+    return ctx.helper.getParentPath(path);
   }
 
-  async get_node(project_id, path, from_cache) {
+  validateFilePath(path) {
+    const { ctx } = this;
+    path = path || ctx.params.path;
+    const isFilePath = ctx.helper.isFilePath(path);
+    if (!isFilePath) { ctx.throw(400, error_msgs.not_file_path); }
+  }
+
+  async getNode(project_id, path, from_cache) {
     const { ctx } = this;
     path = path || ctx.params.path;
     const node = await ctx.model.Node
-      .get_by_path(project_id, path, from_cache)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .getByPath(project_id, path, from_cache);
     return node;
   }
 
-  async get_existing_node(project_id, path, from_cache) {
-    const node = await this.get_node(project_id, path, from_cache);
-    this.throw_if_node_not_exist(node);
+  async getExistsNode(project_id, path, from_cache) {
+    const node = await this.getNode(project_id, path, from_cache);
+    this.throwIfNodeNotExist(node);
     return node;
   }
 
-  throw_if_node_not_exist(node) {
-    this.throwIfNotExist(node, 'File or folder not found');
+  throwIfNodeNotExist(node) {
+    this.throwIfNotExist(node, error_msgs.not_node);
   }
 
-  throw_if_node_exists(node) {
-    this.throwIfExists(node, 'File or folder already exists');
+  throwIfNodeExists(node) {
+    this.throwIfExists(node, error_msgs.node_exists);
   }
 
-  async ensure_node_not_exist(project_id, path, from_cache) {
-    const node = await this.get_node(project_id, path, from_cache);
-    this.throw_if_node_exists(node);
+  throwIfNotFile(node) {
+    if (node.type !== file_type) this.ctx.throw(400, error_msgs.not_file);
+  }
+
+  throwIfNotFolder(node) {
+    if (node.type !== folder_type) this.ctx.throw(400, error_msgs.not_folder);
+  }
+
+  async ensureNodeNotExist(project_id, path, from_cache) {
+    const node = await this.getNode(project_id, path, from_cache);
+    this.throwIfNodeExists(node);
     return node;
   }
 
-  async ensure_nodes_not_exist(project_id, files, from_cache) {
+  async ensureNodesNotExist(project_id, files, from_cache = false) {
     for (const file of files) {
-      await this.ensure_node_not_exist(project_id, file.path, from_cache);
+      await this.ensureNodeNotExist(project_id, file.path, from_cache);
     }
   }
 
-  ensure_unique(files) {
+  ensureUnique(files) {
     const { ctx } = this;
     const exist_paths = {};
-    const errMsg = 'Reduplicative files exist in your request';
+    const errMsg = error_msgs.reduplicate;
     for (const file of files) {
       if (exist_paths[file.path]) { ctx.throw(409, errMsg); }
       exist_paths[file.path] = true;
     }
   }
 
-  async ensure_parent_exist(account_id, project_id, path) {
+  async ensureParentExist(account_id, project_id, path) {
     const { ctx } = this;
     path = path || ctx.params.path;
     await ctx.model.Node
-      .ensure_parent_exist(account_id, project_id, path)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .ensureParentExist(account_id, project_id, path);
   }
 
-  async ensure_parents_exist(account_id, project_id, files) {
+  async ensureParentsExist(account_id, project_id, files) {
     const { ctx } = this;
     for (const file of files) {
-      await ctx.model.Node.ensure_parent_exist(
-        account_id, project_id, file.path
-      );
+      await ctx.model.Node
+        .ensureParentExist(account_id, project_id, file.path);
     }
   }
 
-  get_commit_options(project) {
+  getCommitOptions(project) {
     const { ctx } = this;
     return {
       commit_message: ctx.params.commit_message,

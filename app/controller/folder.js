@@ -41,21 +41,17 @@ class FolderController extends Controller {
     const { ctx } = this;
     ctx.validate(create_rule);
     const path = ctx.params.path;
-    const project = await this.get_writable_project();
-    await this.ensure_node_not_exist(project._id, path);
-    await this.ensure_parent_exist(project.account_id, project._id, path);
+    const project = await this.getWritableProject();
+    await this.ensureNodeNotExist(project._id, path);
+    await this.ensureParentExist(project.account_id, project._id, path);
     const folder = new ctx.model.Node({
-      name: this.get_file_name(path),
-      type: 'tree',
-      path,
-      project_id: project._id,
+      name: this.getNodeName(path),
+      parent_path: this.getParentPath(path),
+      type: 'tree', path, project_id: project._id,
       account_id: project.account_id,
     });
 
-    await folder.save().catch(err => {
-      ctx.logger.error(err);
-      ctx.throw(500);
-    });
+    await folder.save();
 
     this.created();
   }
@@ -72,17 +68,11 @@ class FolderController extends Controller {
   */
   async remove() {
     const { ctx } = this;
-    const path = ctx.params.path;
-    const project = await this.get_writable_project();
-    const folder = await this.get_existing_node(project._id, path, false);
-    const subfiles = await ctx.model.Node
-      .get_tree_by_path_from_db(
-        project._id,
-        ctx.params.path,
-        true,
-        { skip: 0, limit: 9999999 }
-      );
-    subfiles.push(folder);
+    const { path } = ctx.params;
+    const project = await this.getWritableProject();
+    const folder = await this.getExistsNode(project._id, path, false);
+    const nodes = await ctx.model.Node.getTreeByPath(path, project._id, true);
+    nodes.push(folder);
 
     const commit_options = {
       commit_message: ctx.params.commit_message ||
@@ -92,20 +82,10 @@ class FolderController extends Controller {
     };
 
     const commit = await ctx.model.Commit
-      .delete_file(subfiles, project._id, commit_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
-    await ctx.model.Node
-      .delete_subfiles_and_release_cache(project._id, folder.path, subfiles)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
+      .deleteFile(nodes, project._id, commit_options);
+    await ctx.model.Node.deleteNodes(nodes);
     await this.sendMsg(commit);
+
     this.deleted();
   }
 
@@ -125,46 +105,33 @@ class FolderController extends Controller {
     ctx.validate(move_rule);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
-    const project = await this.get_writable_project();
-    const folder = await this.get_existing_node(project._id, previous_path, false);
-    await this.ensure_node_not_exist(project._id, new_path);
-    await this.ensure_parent_exist(project.account_id, project._id, new_path);
+    const project = await this.getWritableProject();
+    const folder = await this.getExistsNode(project._id, previous_path, false);
+    await this.ensureNodeNotExist(project._id, new_path);
+    await this.ensureParentExist(project.account_id, project._id, new_path);
 
     folder.path = new_path;
     folder.previous_path = previous_path;
     folder.previous_name = folder.name;
-    folder.name = this.get_file_name();
+    folder.name = this.getNodeName(new_path);
+    folder.parent_paht = this.getParentPath(new_path);
 
-    const subfiles = await ctx.model.Node
-      .get_subfiles_by_path(project._id, previous_path, null, false)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    const nodes = await ctx.model.Node.getTreeByPath(previous_path, project._id, true);
 
     const pattern = new RegExp(`^${previous_path}`, 'u');
-    for (const file of subfiles) {
+    for (const file of nodes) {
       file.previous_path = file.path;
       file.path = file.path.replace(pattern, new_path);
+      file.parent_path = this.getParentPath(file.path);
     }
-    subfiles.push(folder);
+    nodes.push(folder);
 
-    const tasks = subfiles.map(file => { return file.save(); });
-    await Promise.all(tasks)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
-    const commit_options = this.get_commit_options(project);
+    await ctx.model.Node.updateNodes(nodes);
+    const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .move_file(subfiles, project._id, commit_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
+      .moveFile(nodes, project._id, commit_options);
     await this.sendMsg(commit);
+
     this.moved();
   }
 }

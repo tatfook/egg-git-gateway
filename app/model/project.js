@@ -21,6 +21,8 @@ module.exports = app => {
     account_id: Number,
   }, { timestamps: true });
 
+  ProjectSchema.index({ path: 1 });
+
   // const stringify = fast_JSON({
   //   title: 'stringify project',
   //   type: 'object',

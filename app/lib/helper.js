@@ -72,6 +72,10 @@ class Helper {
   static parsePath(path) {
     return path_helper.parse(path);
   }
+
+  static isFilePath(path) {
+    return Boolean(path_helper.extname(path));
+  }
 }
 
 module.exports = Helper;

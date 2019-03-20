@@ -9,7 +9,9 @@ module.exports = app => {
   const url_prefix = app.config.url_prefix;
   if (url_prefix) { router.prefix(url_prefix); }
 
-  const { account, home, project } = controller;
+  const {
+    account, home, project, tree, file, folder,
+  } = controller;
 
   router.get('home', '/', home.index);
 
@@ -20,21 +22,21 @@ module.exports = app => {
   router.del('/projects/:path', project.destroy);
   router.get('/projects/:path/exist', project.exist);
 
-  router.get('/projects/:project_path/tree/:path', controller.tree.show);
-  router.get('/projects/:project_path/tree/', controller.tree.root);
+  router.get('/projects/:project_path/tree/:path', tree.show);
+  router.get('/projects/:project_path/tree/', tree.root);
 
-  router.get('/projects/:project_path/files/:path', controller.file.show);
-  router.post('/projects/:project_path/files/:path', controller.file.create);
-  router.post('/projects/:project_path/files', controller.file.create_many);
-  router.put('/projects/:project_path/files/:path', controller.file.update);
-  router.put('/projects/:project_path/files/:path/move', controller.file.move);
-  router.del('/projects/:project_path/files/:path', controller.file.remove);
+  router.get('/projects/:project_path/files/:path', file.show);
+  router.post('/projects/:project_path/files/:path', file.create);
+  router.post('/projects/:project_path/files', file.create_many);
+  router.put('/projects/:project_path/files/:path', file.update);
+  router.put('/projects/:project_path/files/:path/move', file.move);
+  router.del('/projects/:project_path/files/:path', file.destroy);
 
-  router.post('/projects/:project_path/folders/:path', controller.folder.create);
-  router.put('/projects/:project_path/folders/:path/move', controller.folder.move);
-  router.del('/projects/:project_path/folders/:path', controller.folder.remove);
+  router.post('/projects/:project_path/folders/:path', folder.create);
+  router.put('/projects/:project_path/folders/:path/move', folder.move);
+  router.del('/projects/:project_path/folders/:path', folder.remove);
 
-  router.delete('/projects/:project_path/clear', controller.file.clear_project);
-  router.post('/projects/:project_path/migrate/files/:path', controller.file.migrate);
-  router.post('/projects/:project_path/migrate/files/', controller.file.migrate_many);
+  // router.delete('/projects/:project_path/clear', controller.file.clearProject);
+  // router.post('/projects/:project_path/migrate/files/:path', controller.file.migrate);
+  // router.post('/projects/:project_path/migrate/files/', controller.file.migrate_many);
 };

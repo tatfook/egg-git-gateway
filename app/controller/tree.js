@@ -1,7 +1,6 @@
 'use strict';
 
 const Controller = require('./node');
-const { paginate } = require('../lib/helper');
 
 class TreeController extends Controller {
   /**
@@ -20,31 +19,22 @@ class TreeController extends Controller {
   */
   async show() {
     const { ctx } = this;
-    const from_cache = !ctx.params.refresh_cache;
-    const recursive = ctx.params.recursive;
-    const project = await this.getExistsProject(ctx.params.project_path);
+    const {
+      path, refresh_cache, recursive, project_path,
+    } = ctx.params;
+    const from_cache = !refresh_cache;
+    const project = await this.getExistsProject(project_path);
     const tree = await ctx.model.Node
-      .get_tree_by_path(
-        project._id,
-        ctx.params.path,
-        from_cache,
-        recursive,
-        paginate(ctx.params)
-      );
+      .getTreeByPath(path, project._id, recursive, from_cache);
     ctx.body = tree;
   }
 
   async root() {
     const { ctx } = this;
-    const project = await this.getExistsProject(ctx.params.project_path);
+    const { project_path, recursive, from_cache } = ctx.params;
+    const project = await this.getExistsProject(project_path);
     const tree = await ctx.model.Node
-      .get_tree_by_path(
-        project._id,
-        null,
-        false,
-        true,
-        paginate(ctx.params)
-      );
+      .getRootTree(project._id, recursive, from_cache);
     ctx.body = tree;
   }
 }
