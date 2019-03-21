@@ -58,8 +58,8 @@ class ProjectController extends Controller {
       .createRepository(storage_name, namespace, repo_name);
     const project = {
       site_id, sitename, repo_name, path,
-      visibility, git_path: repo.relative_path,
-      account_id: account._id,
+      visibility, repo_path: repo.relative_path,
+      account,
     };
     await ctx.model.Project.create(project);
 

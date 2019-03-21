@@ -99,12 +99,10 @@ module.exports = app => {
       account_id, project_id, to_create,
       already_exist, node,
     ] = args;
-
     let parent_path = node.parent_path || getParentPath(node.path);
     while (parent_path !== root_path) {
       const checked = inAnyOne(parent_path, to_create, already_exist);
       if (checked) return;
-
       let parent_node = await this.getByPath(project_id, parent_path);
       if (parent_node) {
         already_exist[parent_path] = true;
@@ -117,7 +115,6 @@ module.exports = app => {
           type: tree_type, parent_path,
         };
         to_create[path] = parent_node;
-
       }
     }
   };

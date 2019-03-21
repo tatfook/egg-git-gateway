@@ -99,7 +99,6 @@ class FileController extends Controller {
     const { path, content } = ctx.params;
     const project = await this.getWritableProject();
     await this.ensureNodeNotExist(project._id, path);
-
     const nodes_to_create = await ctx.model.Node
       .getParentsNotExist(project.account_id, project._id, path);
     const name = this.getNodeName(path);
@@ -113,7 +112,7 @@ class FileController extends Controller {
     await ctx.model.Node.create(nodes_to_create);
     const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .createFile(file, project._id, commit_options);
+      .createFile(file, project, commit_options);
     await this.sendMsg(commit);
 
     this.created();
@@ -139,7 +138,7 @@ class FileController extends Controller {
     files = await ctx.model.Node.create(nodes_to_create);
     const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .createFile(files, project._id, commit_options);
+      .createFile(files, project, commit_options);
     await this.sendMsg(commit);
 
     this.created();
@@ -167,7 +166,7 @@ class FileController extends Controller {
     await file.save();
     const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .updateFile(file, project._id, commit_options);
+      .updateFile(file, project, commit_options);
     await this.sendMsg(commit);
 
     this.updated();
@@ -196,7 +195,7 @@ class FileController extends Controller {
       visibility: project.visibility,
     };
     const commit = await ctx.model.Commit
-      .deleteFile(file, project._id, commit_options);
+      .deleteFile(file, project, commit_options);
     await this.sendMsg(commit);
 
     this.deleted();
@@ -235,7 +234,7 @@ class FileController extends Controller {
     await file.save();
     const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .moveFile(file, project._id, commit_options);
+      .moveFile(file, project, commit_options);
     await this.sendMsg(commit);
 
     this.moved();

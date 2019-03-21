@@ -75,13 +75,11 @@ class NodeController extends Controller {
 
   // send messages to kafka
   async sendMsg(commit) {
-    console.log(commit);
-    // const { ctx, service } = this;
-    // const payloads = this.formatMsg(commit);
-    // await service.kafka.send(payloads)
-    //   .catch(err => {
-    //     ctx.logger.error(err);
-    //   });
+    // console.log(commit);
+    const { ctx, service } = this;
+    const payloads = this.formatMsg(commit);
+    await service.kafka.send(payloads)
+      .catch(ctx.logger.error);
   }
 
   getNodeName(path) {
@@ -101,6 +99,13 @@ class NodeController extends Controller {
     path = path || ctx.params.path;
     const isFilePath = ctx.helper.isFilePath(path);
     if (!isFilePath) { ctx.throw(400, error_msgs.not_file_path); }
+  }
+
+  getRepo(account, project) {
+    return {
+      path: project.repo_path,
+      storage_name: account.storage_name,
+    };
   }
 
   async getNode(project_id, path, from_cache) {

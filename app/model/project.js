@@ -10,6 +10,11 @@ module.exports = app => {
   // const logger = app.logger;
   // const cache_expire = app.config.cache_expire;
 
+  const AccountSchema = new Schema({
+    _id: Number,
+    storage_name: String,
+  });
+
   const ProjectSchema = new Schema({
     // _id: Number,
     visibility: { type: String, default: 'public' },
@@ -17,11 +22,19 @@ module.exports = app => {
     site_id: Number,
     sitename: String,
     path: { type: String, unique: true },
-    git_path: String,
-    account_id: Number,
+    repo_path: String,
+    account: AccountSchema,
   }, { timestamps: true });
 
   ProjectSchema.index({ path: 1 });
+
+  ProjectSchema.virtual('account_id').get(function() {
+    return this.account._id;
+  });
+
+  ProjectSchema.virtual('storage_name').get(function() {
+    return this.account.storage_name;
+  });
 
   // const stringify = fast_JSON({
   //   title: 'stringify project',

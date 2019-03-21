@@ -3,7 +3,9 @@
 const Controller = require('./node');
 
 const create_rule = {
-  branch: { type: 'string', default: 'master', required: false },
+  branch: {
+    type: 'string', default: 'master', required: false,
+  },
   commit_message: { type: 'string', required: false },
   encoding: {
     type: 'enum',
@@ -15,7 +17,9 @@ const create_rule = {
 
 const move_rule = {
   new_path: 'string',
-  branch: { type: 'string', default: 'master', required: false },
+  branch: {
+    type: 'string', default: 'master', required: false,
+  },
   content: { type: 'string', required: false },
   commit_message: { type: 'string', required: false },
   encoding: {
@@ -42,15 +46,15 @@ class FolderController extends Controller {
     ctx.validate(create_rule);
     const path = ctx.params.path;
     const project = await this.getWritableProject();
-    await this.ensureNodeNotExist(project._id, path);
-    await this.ensureParentExist(project.account_id, project._id, path);
+    const { account_id } = project;
+    const project_id = project._id;
+    await this.ensureNodeNotExist(project_id, path);
+    await this.ensureParentExist(account_id, project_id, path);
     const folder = new ctx.model.Node({
       name: this.getNodeName(path),
       parent_path: this.getParentPath(path),
-      type: 'tree', path, project_id: project._id,
-      account_id: project.account_id,
+      type: 'tree', path, project_id, account_id,
     });
-
     await folder.save();
 
     this.created();
@@ -71,7 +75,8 @@ class FolderController extends Controller {
     const { path } = ctx.params;
     const project = await this.getWritableProject();
     const folder = await this.getExistsNode(project._id, path, false);
-    const nodes = await ctx.model.Node.getTreeByPath(path, project._id, true);
+    const nodes = await ctx.model.Node
+      .getTreeByPath(path, project._id, true);
     nodes.push(folder);
 
     const commit_options = {
@@ -82,7 +87,7 @@ class FolderController extends Controller {
     };
 
     const commit = await ctx.model.Commit
-      .deleteFile(nodes, project._id, commit_options);
+      .deleteFile(nodes, project, commit_options);
     await ctx.model.Node.deleteNodes(nodes);
     await this.sendMsg(commit);
 
@@ -106,9 +111,11 @@ class FolderController extends Controller {
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.getWritableProject();
-    const folder = await this.getExistsNode(project._id, previous_path, false);
+    const { account_id } = project;
+    const folder = await this
+      .getExistsNode(project._id, previous_path, false);
     await this.ensureNodeNotExist(project._id, new_path);
-    await this.ensureParentExist(project.account_id, project._id, new_path);
+    await this.ensureParentExist(account_id, project._id, new_path);
 
     folder.path = new_path;
     folder.previous_path = previous_path;
@@ -116,7 +123,8 @@ class FolderController extends Controller {
     folder.name = this.getNodeName(new_path);
     folder.parent_paht = this.getParentPath(new_path);
 
-    const nodes = await ctx.model.Node.getTreeByPath(previous_path, project._id, true);
+    const nodes = await ctx.model.Node
+      .getTreeByPath(previous_path, project._id, true);
 
     const pattern = new RegExp(`^${previous_path}`, 'u');
     for (const file of nodes) {
@@ -129,7 +137,7 @@ class FolderController extends Controller {
     await ctx.model.Node.updateNodes(nodes);
     const commit_options = this.getCommitOptions(project);
     const commit = await ctx.model.Commit
-      .moveFile(nodes, project._id, commit_options);
+      .moveFile(nodes, project, commit_options);
     await this.sendMsg(commit);
 
     this.moved();
