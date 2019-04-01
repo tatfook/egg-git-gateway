@@ -2,7 +2,7 @@
 
 const fast_JSON = require('fast-json-stringify');
 
-const stringify_commit = fast_JSON({
+const commit_stringifier = fast_JSON({
   title: 'stringify commit message',
   type: 'object',
   properties: {
@@ -25,7 +25,7 @@ const stringify_commit = fast_JSON({
   },
 });
 
-const stringify_project = fast_JSON({
+const project_stringifier = fast_JSON({
   title: 'stringify project',
   type: 'object',
   properties: {
@@ -36,7 +36,7 @@ const stringify_project = fast_JSON({
   },
 });
 
-const stringify_file = fast_JSON({
+const node_stringifier = fast_JSON({
   title: 'stringify file',
   type: 'object',
   properties: {
@@ -47,7 +47,7 @@ const stringify_file = fast_JSON({
   },
 });
 
-const stringify_tree = fast_JSON({
+const tree_stringifier = fast_JSON({
   title: 'stringify tree',
   type: 'array',
   items: {
@@ -62,8 +62,8 @@ const stringify_tree = fast_JSON({
 });
 
 module.exports = {
-  stringify_commit,
-  stringify_project,
-  stringify_file,
-  stringify_tree,
+  commit_stringifier,
+  project_stringifier,
+  node_stringifier,
+  tree_stringifier,
 };

@@ -54,7 +54,7 @@ module.exports = app => {
   const statics = ProjectSchema.statics;
 
   // statics.cache = async function(project) {
-  //   const key = generate_project_key(project.path);
+  //   const key = getProjectKey(project.path);
   //   const serilized_project = stringify(project);
   //   await redis.setex(key, cache_expire, serilized_project)
   //     .catch(err => {
@@ -74,17 +74,17 @@ module.exports = app => {
   // };
 
   // statics.release_content_cache = async function(path, pipeline = redis.pipeline()) {
-  //   const key = generate_project_key(path);
+  //   const key = getProjectKey(path);
   //   pipeline.del(key);
   // };
 
   // statics.release_tree_cache = function(path, pipeline = redis.pipeline()) {
-  //   const key = generate_tree_key(path);
+  //   const key = getTreeKey(path);
   //   pipeline.del(key);
   // };
 
   // statics.load_cache_by_path = async function(path) {
-  //   const key = generate_project_key(path);
+  //   const key = getProjectKey(path);
   //   const project = await redis.get(key)
   //     .catch(err => {
   //       logger.error(err);
@@ -124,8 +124,8 @@ module.exports = app => {
   // statics.release_multi_projects_cache = async function(projects, pipeline = redis.pipeline()) {
   //   const keys_to_release = [];
   //   for (const project of projects) {
-  //     keys_to_release.push(generate_project_key(project.path));
-  //     keys_to_release.push(generate_tree_key(project.path));
+  //     keys_to_release.push(getProjectKey(project.path));
+  //     keys_to_release.push(getTreeKey(project.path));
   //   }
   //   pipeline.del(keys_to_release);
   //   return pipeline;

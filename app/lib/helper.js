@@ -5,24 +5,24 @@ const _ = require('lodash/lang');
 const path_helper = require('path').posix;
 
 class Helper {
-  static generate_file_key(project_id, path) {
+  static getNodeKey(project_id, path) {
     return `project:${project_id}:file:${path}`;
   }
 
-  static generate_tree_key(project_id, path) {
+  static getTreeKey(project_id, path) {
     return `project:${project_id}:tree:${path}`;
   }
 
-  static generate_project_key(path) {
+  static getProjectKey(path) {
     return `project:${path}`;
   }
 
-  static generate_account_key(kw_username) {
+  static getAccountKey(kw_username) {
     return `account:${kw_username}`;
   }
 
   static project2Msg(project, method) {
-    return Stringifier.stringify_project({
+    return Stringifier.project_stringifier({
       _id: project._id,
       visibility: project.visibility,
       path: project.path,
@@ -30,16 +30,16 @@ class Helper {
     });
   }
 
-  static commit2Msg(commit) {
-    return Stringifier.stringify_commit(commit);
+  static commit2Str(commit) {
+    return Stringifier.commit_stringifier(commit);
   }
 
-  static serilize_file(file) {
-    return Stringifier.stringify_file(file);
+  static node2Str(file) {
+    return Stringifier.node_stringifier(file);
   }
 
-  static serilize_tree(tree) {
-    return Stringifier.stringify_tree(tree);
+  static tree2Str(tree) {
+    return Stringifier.tree_stringifier(tree);
   }
 
   static isEmpty(value) {

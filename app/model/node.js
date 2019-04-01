@@ -188,18 +188,18 @@ module.exports = app => {
   // };
 
   // statics.cache_content = function(file, pipeline = redis.pipeline()) {
-  //   const key = Helper.generate_file_key(file.project_id, file.path);
-  //   pipeline.setex(key, cache_expire, Helper.serilize_file(file));
+  //   const key = Helper.getNodeKey(file.project_id, file.path);
+  //   pipeline.setex(key, cache_expire, Helper.node2Str(file));
   // };
 
   // statics.release_content_cache = function(file, pipeline = redis.pipeline()) {
   //   const path = file.previous_path || file.path;
-  //   const key = Helper.generate_file_key(file.project_id, path);
+  //   const key = Helper.getNodeKey(file.project_id, path);
   //   pipeline.del(key);
   // };
 
   // statics.load_content_cache_by_path = async function(project_id, path) {
-  //   const key = Helper.generate_file_key(project_id, path);
+  //   const key = Helper.getNodeKey(project_id, path);
   //   const project = await redis.get(key)
   //     .catch(err => {
   //       logger.error(err);
@@ -208,13 +208,13 @@ module.exports = app => {
   // };
 
   // statics.cache_tree = function(project_id, path, tree, pipeline = redis.pipeline()) {
-  //   const key = Helper.generate_tree_key(project_id, path);
-  //   pipeline.setex(key, cache_expire, Helper.serilize_tree(tree));
+  //   const key = Helper.getTreeKey(project_id, path);
+  //   pipeline.setex(key, cache_expire, Helper.tree2Str(tree));
   //   return pipeline;
   // };
 
   // statics.load_tree_cache_by_path = async function(project_id, path) {
-  //   const key = Helper.generate_tree_key(project_id, path);
+  //   const key = Helper.getTreeKey(project_id, path);
   //   const serilized_tree = await redis.get(key)
   //     .catch(err => {
   //       logger.error(err);
@@ -223,7 +223,7 @@ module.exports = app => {
   // };
 
   // statics.release_tree_cache = function(file, pipeline = redis.pipeline()) {
-  //   const key = Helper.generate_tree_key(file.project_id, file.tree_path);
+  //   const key = Helper.getTreeKey(file.project_id, file.tree_path);
   //   pipeline.del(key);
   //   return pipeline;
   // };
@@ -232,14 +232,14 @@ module.exports = app => {
   //   const keys_to_release = [];
   //   for (const file of files) {
   //     file.project_id = file.project_id || project_id;
-  //     const file_key = Helper.generate_file_key(
+  //     const file_key = Helper.getNodeKey(
   //       file.project_id || project_id,
   //       file.previous_path || file.path
   //     );
   //     keys_to_release.push(file_key);
 
   //     if (file.type === 'tree') {
-  //       const tree_key = Helper.generate_tree_key(
+  //       const tree_key = Helper.getTreeKey(
   //         file.project_id || project_id,
   //         file.previous_path || file.path
   //       );
