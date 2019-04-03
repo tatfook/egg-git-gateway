@@ -11,6 +11,15 @@ module.exports = app => {
   const logger = app.logger;
   const cache_expire = app.config.cache_expire;
 
+  const CommitSchema = new Schema({
+    _id: String,
+    short_id: String,
+    author_name: String,
+    authored_date: String,
+    created_at: String,
+    message: String,
+  });
+
   const ProjectSchema = new Schema({
     _id: Number,
     visibility: { type: String, default: 'public' },
@@ -20,6 +29,7 @@ module.exports = app => {
     path: { type: String, unique: true },
     git_path: String,
     account_id: Number,
+    commits: [ CommitSchema ],
   }, { timestamps: true });
 
   const stringify = fast_JSON({
@@ -36,6 +46,10 @@ module.exports = app => {
       account_id: { type: 'number' },
     },
   });
+
+  CommitSchema.virtual('id')
+    .get(function() { return this._id; })
+    .set(function(value) { this._id = value; });
 
   const statics = ProjectSchema.statics;
 

@@ -234,12 +234,12 @@ class GitlabService extends Service {
     };
   }
 
-  async load_file(project_id, file_path) {
+  async load_file(project_id, file_path, ref = 'master') {
     assert(project_id);
     assert(file_path);
     file_path = encodeURIComponent(file_path);
     const res = await this.client
-      .get(`/projects/${project_id}/repository/files/${file_path}?ref=master`)
+      .get(`/projects/${project_id}/repository/files/${file_path}?ref=${ref}`)
       .catch(err => {
         this.app.logger.error(`failed to get file ${file_path} of project ${project_id}`);
         this.app.logger.error(err);
@@ -261,6 +261,13 @@ class GitlabService extends Service {
     if (file_path.endsWith('.json')) { res.data = JSON.stringify(res.data); }
     if (res.data.startsWith('<!DOCTYPE html>')) { throw { response: { status: 404 } }; }
     return { content: res.data };
+  }
+
+  async load_commits(project_id) {
+    const res = await this.client
+      .get(`/projects/${project_id}/repository/commits?all=true`);
+    const commits = res.data;
+    return commits;
   }
 }
 

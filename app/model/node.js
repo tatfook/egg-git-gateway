@@ -40,11 +40,9 @@ module.exports = app => {
   };
 
   statics.get_tree_path = function(path, file_name) {
-    console.log(path, file_name);
     if (!file_name) { file_name = this.get_file_name(path); }
     const file_name_pattern = new RegExp(`/${file_name}$`, 'u');
     const tree_path = path.replace(file_name_pattern, '');
-    console.log(tree_path);
     return tree_path;
   };
 

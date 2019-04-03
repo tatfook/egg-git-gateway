@@ -157,6 +157,17 @@ class ProjectController extends Controller {
     this.deleted();
   }
 
+  async getCommits() {
+    const { ctx, service } = this;
+    const { path } = ctx.params;
+    const project = await this.get_writable_project(path, false);
+    if (project.commits.length === 0) {
+      project.commits = await service.gitlab.load_commits(project._id);
+      await project.save();
+    }
+    ctx.body = project.commits;
+  }
+
   async ensure_project_not_exist(project_path) {
     const project = await this.get_project(project_path);
     this.throw_if_exists(project, 'Project already exists');

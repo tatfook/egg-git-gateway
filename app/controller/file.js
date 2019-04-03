@@ -3,6 +3,8 @@
 const Controller = require('./node');
 const { empty } = require('../lib/helper');
 
+const default_branch = 'master';
+
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false, allowEmpty: true },
@@ -72,12 +74,17 @@ class FileController extends Controller {
   * @apiParam {Boolean} [refresh_cache=false]  Whether refresh the cache of this file
   */
   async show() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     const project = await this.get_readable_project();
-    const path = ctx.params.path;
-    const from_cache = !ctx.params.refresh_cache;
-    let file = await this.get_node(project._id, path, from_cache);
-    if (empty(file)) { file = await this.load_from_gitlab(project); }
+    const { path, refresh_cache, ref = 'master' } = ctx.params;
+    const from_cache = !refresh_cache;
+    let file;
+    if (ref !== default_branch) {
+      file = await service.gitlab.load_file(project._id, path, ref);
+    } else {
+      file = await this.get_node(project._id, path, from_cache);
+      if (empty(file)) { file = await this.load_from_gitlab(project); }
+    }
     ctx.body = { content: file.content || '' };
   }
 
