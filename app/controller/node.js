@@ -66,7 +66,7 @@ class NodeController extends Controller {
       key,
     };
     const es_message = {
-      messages: helper.commit2Str(commit),
+      messages: helper.commit2Msg(commit),
       topic: topics.elasticsearch,
       key,
     };

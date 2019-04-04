@@ -5,8 +5,9 @@ const _ = require('lodash/lang');
 const path_helper = require('path').posix;
 
 class Helper {
-  static getNodeKey(project_id, path) {
-    return `project:${project_id}:file:${path}`;
+  static getNodeKey(node) {
+    const { project_id, path } = node;
+    return `project:${project_id}:node:${path}`;
   }
 
   static getTreeKey(project_id, path) {
@@ -17,8 +18,8 @@ class Helper {
     return `project:${path}`;
   }
 
-  static getAccountKey(kw_username) {
-    return `account:${kw_username}`;
+  static getAccountKey(username) {
+    return `account:${username}`;
   }
 
   static project2Msg(project, method) {
@@ -30,7 +31,7 @@ class Helper {
     });
   }
 
-  static commit2Str(commit) {
+  static commit2Msg(commit) {
     return Stringifier.commit_stringifier(commit);
   }
 

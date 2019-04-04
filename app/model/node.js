@@ -4,6 +4,7 @@
 const {
   isEmpty, getNodeName, getParentPath,
 } = require('../lib/helper');
+const { getCacheNodePlugin } = require('../lib/cachePlugins');
 
 const root_path = '.';
 const tree_type = 'tree';
@@ -36,8 +37,9 @@ module.exports = app => {
     project_id: String,
     account_id: Number,
   }, { timestamps: true });
-
   NodeSchema.index({ project_id: 1, path: 1 });
+  const cachePlugin = getCacheNodePlugin(app);
+  NodeSchema.plugin(cachePlugin);
 
   const statics = NodeSchema.statics;
 
@@ -48,6 +50,7 @@ module.exports = app => {
       // todo: load from cache
     }
     const node = await this.findOne({ project_id, path });
+    node.cache();
     return node;
   };
 
