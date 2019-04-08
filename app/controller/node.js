@@ -126,9 +126,12 @@ class NodeController extends Controller {
 
   get_commit_options(project) {
     const { ctx } = this;
+    let { commit_message, source_version, encoding } = ctx.params;
+    if (source_version) source_version = Number(source_version);
     return {
-      commit_message: ctx.params.commit_message,
-      encoding: ctx.params.encoding,
+      source_version,
+      commit_message,
+      encoding,
       author: ctx.state.user.username,
       visibility: project.visibility,
     };

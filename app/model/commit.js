@@ -8,6 +8,7 @@ class CommitFormatter {
       project_id,
       author_name: options.author || null,
       commit_message: options.commit_message,
+      source_version: options.source_version,
       actions,
     };
   }
@@ -121,6 +122,7 @@ module.exports = app => {
     actions: [ ActionSchema ],
     commit_message: String,
     author_name: String,
+    source_version: Number,
   }, { timestamps: true });
 
   const statics = CommitSchema.statics;

@@ -163,6 +163,7 @@ class ProjectController extends Controller {
     const project = await this.get_writable_project(path, false);
     if (project.commits.length === 0) {
       project.commits = await service.gitlab.load_commits(project._id);
+      project.fillVersion();
       await project.save();
     }
     ctx.body = project.commits;

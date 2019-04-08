@@ -219,7 +219,7 @@ class FileController extends Controller {
   */
   async remove() {
     const { ctx } = this;
-    const path = ctx.params.path;
+    const { path } = ctx.params;
     const project = await this.get_writable_project();
     const file = await this.get_existing_node(project._id, path, false);
 
@@ -230,11 +230,7 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = {
-      commit_message: ctx.params.commit_message,
-      author: ctx.state.user.username,
-      visibility: project.visibility,
-    };
+    const commit_options = this.get_commit_options(project);
     const commit = await ctx.model.Commit
       .delete_file(file, project._id, commit_options)
       .catch(err => {
