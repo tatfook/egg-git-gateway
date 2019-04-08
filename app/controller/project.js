@@ -162,13 +162,13 @@ class ProjectController extends Controller {
     const { path } = ctx.params;
     const { skip, limit } = ctx.helper.paginate(ctx.params);
     const project = await this.get_writable_project(path, false);
-    const total = project.commits.length;
-    if (total === 0) {
+    if (project.commits.length === 0) {
       project.commits = await service.gitlab.load_commits(project._id);
       project.fillVersion();
       await project.save();
     }
     const commits = project.commits.slice(skip, skip + limit);
+    const total = project.commits.length;
     ctx.body = { commits, total };
   }
 
