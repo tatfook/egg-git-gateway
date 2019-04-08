@@ -160,13 +160,16 @@ class ProjectController extends Controller {
   async getCommits() {
     const { ctx, service } = this;
     const { path } = ctx.params;
+    const { skip, limit } = ctx.helper.paginate(ctx.params);
     const project = await this.get_writable_project(path, false);
-    if (project.commits.length === 0) {
+    const total = project.commits.length;
+    if (total === 0) {
       project.commits = await service.gitlab.load_commits(project._id);
       project.fillVersion();
       await project.save();
     }
-    ctx.body = project.commits;
+    const commits = project.commits.slice(skip, skip + limit);
+    ctx.body = { commits, total };
   }
 
   async ensure_project_not_exist(project_path) {
