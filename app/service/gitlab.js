@@ -3,9 +3,24 @@
 const Service = require('egg').Service;
 const Axios = require('axios');
 const assert = require('assert');
+const _ = require('lodash/object');
 
 let Client;
 let Raw_Client;
+
+const properToPick = [
+  'short_id', 'author_name', 'authored_date',
+  'created_at', 'message',
+];
+const serializeCommits = commits => {
+  let version = 0;
+  return commits.map(commit => {
+    version++;
+    const serilized = _.pick(commit, properToPick);
+    serilized.version = version;
+    return serilized;
+  });
+};
 
 class GitlabService extends Service {
   get client() {
@@ -263,13 +278,13 @@ class GitlabService extends Service {
     return { content: res.data };
   }
 
-  async load_commits(project_id, path) {
+  async load_commits(project_id, path = '') {
     const res = await this.client
       .get(`/projects/${project_id}/repository/commits`, {
         params: { all: true, path: encodeURIComponent(path) },
       });
     const commits = res.data;
-    return commits;
+    return serializeCommits(commits);
   }
 }
 
