@@ -263,9 +263,11 @@ class GitlabService extends Service {
     return { content: res.data };
   }
 
-  async load_commits(project_id) {
+  async load_commits(project_id, path) {
     const res = await this.client
-      .get(`/projects/${project_id}/repository/commits?all=true`);
+      .get(`/projects/${project_id}/repository/commits`, {
+        params: { all: true, path: encodeURIComponent(path) },
+      });
     const commits = res.data;
     return commits;
   }
