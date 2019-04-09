@@ -28,6 +28,13 @@ class Helper {
     });
   }
 
+  static getCommitsRecordKey(project_id, path) {
+    let key = `project:${project_id}`;
+    if (path) key += `:file:${path}`;
+    key += ':commits';
+    return key;
+  }
+
   static commit_to_message(commit) {
     return Stringifier.stringify_commit(commit);
   }
@@ -38,6 +45,10 @@ class Helper {
 
   static serilize_tree(tree) {
     return Stringifier.stringify_tree(tree);
+  }
+
+  static serilizeCommitRecord(commit) {
+    return Stringifier.stringifyCommitRecord(commit);
   }
 
   static empty(obj) {

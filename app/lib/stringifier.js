@@ -25,6 +25,19 @@ const stringify_commit = fast_JSON({
   },
 });
 
+const stringifyCommitRecord = fast_JSON({
+  title: 'stringify commit record',
+  type: 'object',
+  properties: {
+    short_id: { type: 'string' },
+    author_name: { type: 'string' },
+    authored_date: { type: 'string' },
+    created_at: { type: 'string' },
+    message: { type: 'string' },
+    version: { type: 'number' },
+  },
+});
+
 const stringify_project = fast_JSON({
   title: 'stringify project',
   type: 'object',
@@ -63,6 +76,7 @@ const stringify_tree = fast_JSON({
 
 module.exports = {
   stringify_commit,
+  stringifyCommitRecord,
   stringify_project,
   stringify_file,
   stringify_tree,

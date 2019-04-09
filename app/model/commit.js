@@ -1,5 +1,7 @@
 'use strict';
 
+const { getCommitsRecordKey, serilizeCommitRecord } = require('../lib/helper');
+
 class CommitFormatter {
   static output(actions, project_id, options) {
     return {
@@ -102,8 +104,9 @@ class CommitFormatter {
 }
 
 module.exports = app => {
-  const mongoose = app.mongoose;
+  const { mongoose, redis } = app;
   const Schema = mongoose.Schema;
+  const { cache_expire } = app.config;
   const logger = app.logger;
 
   const ActionSchema = new Schema({
@@ -161,6 +164,25 @@ module.exports = app => {
         logger.error(`failed to create commit ${commit}`);
         throw err;
       });
+  };
+
+  statics.saveRecord = async (project_id, path, commits) => {
+    if (commits.length === 0) return;
+    const key = getCommitsRecordKey(project_id, path);
+    const formatted = commits.map(serilizeCommitRecord);
+    return await redis.pipeline()
+      .rpush(key, ...formatted).expire(cache_expire)
+      .exec();
+  };
+
+  statics.getRecord = async (project_id, path, from, to) => {
+    const key = getCommitsRecordKey(project_id, path);
+    let [ commits, total ] = await Promise.all([
+      redis.lrange(key, from, to),
+      redis.llen(key),
+    ]);
+    commits = commits.map(commit => JSON.parse(commit));
+    return [ commits, total ];
   };
 
   return mongoose.model('Commit', CommitSchema);
