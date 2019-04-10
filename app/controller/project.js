@@ -164,12 +164,11 @@ class ProjectController extends Controller {
     const project = await this.get_writable_project(path, false);
     let [ commits, total ] = await ctx.model.Commit
       .getRecord(project._id, file_path, skip, skip + limit - 1);
-
     if (total === 0) {
       commits = await service.gitlab.load_commits(project._id, file_path);
       total = commits.length;
       await ctx.model.Commit.saveRecord(project._id, file_path, commits);
-      commits = commits.slice(skip, skip + limit);
+      commits = commits.reverse().slice(skip, skip + limit);
     }
     ctx.body = { commits, total };
   }

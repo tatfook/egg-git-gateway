@@ -171,7 +171,7 @@ module.exports = app => {
     const key = getCommitsRecordKey(project_id, path);
     const formatted = commits.map(serilizeCommitRecord);
     return await redis.pipeline()
-      .rpush(key, ...formatted).expire(cache_expire)
+      .lpush(key, ...formatted).expire(cache_expire)
       .exec();
   };
 
