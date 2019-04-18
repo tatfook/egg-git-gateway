@@ -13,11 +13,11 @@ const propertiesToPick = [
   'created_at', 'message',
 ];
 const serializeCommits = commits => {
-  let version = 0;
+  let version = commits.length;
   return commits.map(commit => {
-    version++;
     const serilized = _.pick(commit, propertiesToPick);
     serilized.version = version;
+    version--;
     return serilized;
   });
 };
@@ -281,18 +281,18 @@ class GitlabService extends Service {
   async load_commits(project_id, path, page = 1, per_page = 100) {
     let res = await this.client
       .get(`/projects/${project_id}/repository/commits`, {
-        params: { all: true, path, page, per_page },
+        params: { path, page, per_page },
       });
     const commits = res.data;
+    console.log(res.request);
     while (commits.length === 100) {
       page++;
       res = await this.client
         .get(`/projects/${project_id}/repository/commits`, {
-          params: { all: true, path, page, per_page },
+          params: { path, page, per_page },
         });
       commits.push(...res.data);
     }
-
     return serializeCommits(commits);
   }
 }

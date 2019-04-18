@@ -168,7 +168,7 @@ class ProjectController extends Controller {
       commits = await service.gitlab.load_commits(project._id, file_path);
       total = commits.length;
       await ctx.model.Commit.saveRecord(project._id, file_path, commits);
-      commits = commits.reverse().slice(skip, skip + limit);
+      commits = commits.slice(skip, skip + limit);
     }
     ctx.body = { commits, total };
   }
