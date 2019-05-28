@@ -55,9 +55,7 @@ class Base_controllerController extends Controller {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
     const project = await this.get_existing_project(project_path, from_cache);
-    if (!this.own_this_project(ctx.state.user.username, project_path)) {
-      await ctx.ensurePermission(project.site_id, 'rw');
-    }
+    await ctx.ensurePermission(project.site_id, 'rw');
     return project;
   }
 
