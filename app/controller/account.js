@@ -25,7 +25,7 @@ class AccountController extends Controller {
   */
   async show() {
     const { ctx, service } = this;
-    ctx.veryfy();
+    ctx.verify();
     const kw_username = ctx.state.user.username;
     const account = await this.get_existing_account({ kw_username });
     if (!account.token) {
