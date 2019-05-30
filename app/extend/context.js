@@ -7,7 +7,7 @@ const isAdmin = user => {
 };
 
 module.exports = {
-  veryfy() {
+  verify() {
     let errMsg;
     this.state = this.state || {};
     if (empty(this.state.user)) {
@@ -18,7 +18,7 @@ module.exports = {
     if (errMsg) { this.throw(401, errMsg); }
   },
   async ensurePermission(site_id, type) {
-    this.veryfy();
+    this.verify();
     if (isAdmin(this.state.user)) { return; }
     const token = this.headers.authorization;
     const permitted = await this.service.keepwork
