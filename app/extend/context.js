@@ -35,4 +35,16 @@ module.exports = {
     const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
     if (not_permitted) { this.throw(403, errMsg); }
   },
+  async validateToken() {
+    this.verify();
+    const token = this.headers.authorization;
+    await this.service.keepwork
+      .getUserProfile(token)
+      .catch(err => {
+        this.ctx.logger.error(err);
+        const errMsg = 'Invalid token';
+        this.throw(401, errMsg);
+      });
+    return true;
+  },
 };

@@ -33,6 +33,13 @@ class KeepworkService extends Service {
       throw err;
     }
   }
+
+  async getUserProfile(token) {
+    return this.client.get(
+      'users/profile',
+      { headers: { Authorization: token } }
+    );
+  }
 }
 
 module.exports = KeepworkService;
