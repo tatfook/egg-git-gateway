@@ -14,6 +14,15 @@ module.exports = app => {
   const logger = app.logger;
   const cache_expire = app.config.cache_expire;
 
+  const CommitSchema = new Schema({
+    commit_id: String,
+    short_id: String,
+    version: Number,
+    author_name: String,
+    source_version: Number,
+    message: String,
+  }, { timestamps: true });
+
   const NodeSchema = new Schema({
     name: String,
     path: String,
@@ -21,6 +30,8 @@ module.exports = app => {
     type: { type: String, default: 'blob' },
     project_id: Number,
     account_id: Number,
+    commits: [ CommitSchema ],
+    version: Number,
   }, { timestamps: true });
 
   NodeSchema.index({ project_id: 1, path: 1 });
@@ -125,7 +136,7 @@ module.exports = app => {
   };
 
   statics.get_by_path_from_db = async function(project_id, path) {
-    const file = await this.findOne({ project_id, path })
+    const file = await this.findOne({ project_id, path }, '-commits')
       .catch(err => { logger.error(err); });
     if (!Helper.empty(file)) {
       const pipeline = this.cache(file);
@@ -146,6 +157,12 @@ module.exports = app => {
     }
     file = await this.get_by_path_from_db(project_id, path);
     return file;
+  };
+
+  statics.get_commits = async function(project_id, path, skip = 0, limit = 20) {
+    const node = await this.findOne({ project_id, path })
+      .slice('commits', [ skip, skip + limit ]);
+    return node;
   };
 
   statics.move = async function(file) {

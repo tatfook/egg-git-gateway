@@ -8,15 +8,21 @@ const _ = require('lodash/object');
 let Client;
 let Raw_Client;
 
-const propertiesToPick = [
-  'short_id', 'author_name', 'authored_date',
+const COMMIT_PROPERTIES_TO_PICK = [
+  'id', 'short_id', 'author_name', 'authored_date',
   'created_at', 'message',
 ];
+const SOURCE_VERSION_FLAG = '|FROM';
+
 const serializeCommits = commits => {
   let version = commits.length;
   return commits.map(commit => {
-    const serilized = _.pick(commit, propertiesToPick);
+    const serilized = _.pick(commit, COMMIT_PROPERTIES_TO_PICK);
     serilized.version = version;
+    serilized.commit_id = serilized.id;
+    serilized.createdAt = serilized.created_at;
+    serilized.updateAt = serilized.createdAt;
+    serilized.source_version = serilized.message.split(SOURCE_VERSION_FLAG)[1];
     version--;
     return serilized;
   });
@@ -279,21 +285,25 @@ class GitlabService extends Service {
   }
 
   async load_commits(project_id, path, page = 1, per_page = 100) {
-    let res = await this.client
+    const res = await this.client
       .get(`/projects/${project_id}/repository/commits`, {
         params: { path, page, per_page },
       });
     const commits = res.data;
-    console.log(res.request);
-    while (commits.length === 100) {
+    return commits;
+  }
+
+  async load_all_commits(project_id, path) {
+    let page = 1;
+    const per_page = 100;
+    let commits = await this.load_commits(project_id, path, page, per_page);
+    const all = commits;
+    while (commits.length >= 100) {
       page++;
-      res = await this.client
-        .get(`/projects/${project_id}/repository/commits`, {
-          params: { path, page, per_page },
-        });
-      commits.push(...res.data);
+      commits = await this.load_commits(project_id, path, page, per_page);
+      all.push(...commits);
     }
-    return serializeCommits(commits);
+    return serializeCommits(all);
   }
 }
 

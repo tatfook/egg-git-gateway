@@ -3,7 +3,7 @@
 const Controller = require('./node');
 const { empty } = require('../lib/helper');
 
-const default_branch = 'master';
+const DEFAULT_BRANCH = 'master';
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -76,16 +76,26 @@ class FileController extends Controller {
   async show() {
     const { ctx, service } = this;
     const project = await this.get_readable_project();
-    const { path, refresh_cache, ref = 'master' } = ctx.params;
+    const { path, refresh_cache, ref = 'master', version } = ctx.params;
     const from_cache = !refresh_cache;
     let file;
-    if (ref !== default_branch) {
+    if (ref !== DEFAULT_BRANCH) {
       file = await service.gitlab.load_file(project._id, path, ref);
     } else {
       file = await this.get_node(project._id, path, from_cache);
-      if (empty(file)) { file = await this.load_from_gitlab(project); }
+      if (empty(file)) file = await this.load_from_gitlab(project);
     }
-    ctx.body = { content: file.content || '' };
+
+    if (version && !file.version) {
+      const { total } = await service.node.getCommits(project._id, path, 0, 1);
+      file.version = total;
+    }
+
+    ctx.body = {
+      _id: file._id,
+      content: file.content || '',
+      version: version ? file.version : 0,
+    };
   }
 
   /**

@@ -162,15 +162,7 @@ class ProjectController extends Controller {
     const { path, file_path } = ctx.params;
     const { skip, limit } = ctx.helper.paginate(ctx.params);
     const project = await this.get_writable_project(path, false);
-    let [ commits, total ] = await ctx.model.Commit
-      .getRecord(project._id, file_path, skip, skip + limit - 1);
-    if (total === 0) {
-      commits = await service.gitlab.load_commits(project._id, file_path);
-      total = commits.length;
-      await ctx.model.Commit.saveRecord(project._id, file_path, commits);
-      commits = commits.slice(skip, skip + limit);
-    }
-    ctx.body = { commits, total };
+    ctx.body = await service.node.getCommits(project._id, file_path, skip, limit);
   }
 
   async ensure_project_not_exist(project_path) {
