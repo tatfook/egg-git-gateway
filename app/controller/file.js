@@ -1,7 +1,6 @@
 'use strict';
 
 const Controller = require('./node');
-const { empty } = require('../lib/helper');
 
 const DEFAULT_BRANCH = 'master';
 
@@ -75,26 +74,34 @@ class FileController extends Controller {
   */
   async show() {
     const { ctx, service } = this;
-    const project = await this.get_readable_project();
-    const { path, refresh_cache, ref = 'master', version } = ctx.params;
+    const { path, refresh_cache, ref = 'master', commit } = ctx.params;
+
+    let project;
+    if (commit) {
+      project = await this.get_readable_project();
+      // project = await this.get_writable_project();
+    } else {
+      project = await this.get_readable_project();
+    }
+
     const from_cache = !refresh_cache;
     let file;
     if (ref !== DEFAULT_BRANCH) {
       file = await service.gitlab.load_file(project._id, path, ref);
     } else {
       file = await this.get_node(project._id, path, from_cache);
-      if (empty(file)) file = await this.load_from_gitlab(project);
+      file = file || await this.load_from_gitlab(project);
     }
 
-    if (version && !file.version) {
-      const { total } = await service.node.getCommits(project._id, path, 0, 1);
-      file.version = total;
+    if (commit && !file.latest_commit) {
+      const result = await service.node.getCommits(project._id, path);
+      file = result.file;
     }
 
     ctx.body = {
       _id: file._id,
       content: file.content || '',
-      version: version ? file.version : 0,
+      latest_commit: commit ? file.latest_commit : undefined,
     };
   }
 
@@ -214,7 +221,7 @@ class FileController extends Controller {
       });
 
     await this.send_message(message);
-    this.updated();
+    this.updated({ commit: file.latest_commit });
   }
 
   /**

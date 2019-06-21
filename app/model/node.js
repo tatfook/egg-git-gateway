@@ -31,7 +31,7 @@ module.exports = app => {
     project_id: Number,
     account_id: Number,
     commits: [ CommitSchema ],
-    version: Number,
+    latest_commit: CommitSchema,
   }, { timestamps: true });
 
   NodeSchema.index({ project_id: 1, path: 1 });
@@ -136,9 +136,8 @@ module.exports = app => {
   };
 
   statics.get_by_path_from_db = async function(project_id, path) {
-    const file = await this.findOne({ project_id, path }, '-commits')
-      .catch(err => { logger.error(err); });
-    if (!Helper.empty(file)) {
+    const file = await this.findOne({ project_id, path });
+    if (file) {
       const pipeline = this.cache(file);
       await pipeline.exec()
         .catch(err => {
@@ -153,6 +152,7 @@ module.exports = app => {
     let file;
     if (from_cache) {
       file = await this.load_content_cache_by_path(project_id, path);
+      console.log(file);
       if (!Helper.empty(file)) { return file; }
     }
     file = await this.get_by_path_from_db(project_id, path);

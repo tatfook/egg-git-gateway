@@ -78,25 +78,27 @@ class Base_controllerController extends Controller {
     if (ctx.helper.empty(object)) { ctx.throw(404, errMsg); }
   }
 
-  success(action = 'success') {
-    this.ctx.body = { [action]: true };
+  success(action = 'success', extraMsg = {}) {
+    const { ctx } = this;
+    ctx.body = extraMsg;
+    ctx[action] = true;
   }
 
-  created() {
+  created(extraMsg) {
     this.ctx.status = 201;
-    this.success('created');
+    this.success('created', extraMsg);
   }
 
-  updated() {
-    this.success('updated');
+  updated(extraMsg) {
+    this.success('updated', extraMsg);
   }
 
-  deleted() {
-    this.success('deleted');
+  deleted(extraMsg) {
+    this.success('deleted', extraMsg);
   }
 
-  moved() {
-    this.success('moved');
+  moved(extraMsg) {
+    this.success('moved', extraMsg);
   }
 }
 

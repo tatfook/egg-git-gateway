@@ -57,6 +57,16 @@ const stringify_file = fast_JSON({
     path: { type: 'string' },
     type: { type: 'string' },
     content: { type: 'string' },
+    latest_commit: { type: 'object', properties: {
+      _id: { type: 'string' },
+      commit_id: { type: 'string' },
+      short_id: { type: 'string' },
+      version: { type: 'number' },
+      author_name: { type: 'string' },
+      source_version: { type: 'number' },
+      message: { type: 'string' },
+      createdAt: { type: 'string' },
+    } },
   },
 });
 

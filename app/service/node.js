@@ -7,23 +7,27 @@ const FILE_TYPE = 'blob';
 class NodeService extends Service {
   async getCommits(project_id, path, skip = 0, limit = 20) {
     const { ctx } = this;
-    const node = await ctx.model.Node.getCommits(project_id, path, skip, limit);
-    if (node.type !== FILE_TYPE) return { commits: [], total: 0 };
-    if (!node) ctx.throw(404, 'File not found');
-    if (node.commits.length > 0) {
-      return { commits: node.commits, total: node.version };
+    const file = await ctx.model.Node.getCommits(project_id, path, skip, limit);
+    if (file.type !== FILE_TYPE) return { commits: [], total: 0 };
+    if (!file) ctx.throw(404, 'File not found');
+    if (file.commits.length > 0) {
+      return { commits: file.commits, total: file.latest_commit.version, file };
     }
-    return await this.getCommitsFromGitlab(node, skip, limit);
+    return await this.getCommitsFromGitlab(file, skip, limit);
   }
 
-  async getCommitsFromGitlab(node, skip, limit) {
+  async getCommitsFromGitlab(file, skip, limit) {
     const { service } = this;
-    node.commits = await service.gitlab.loadAllCommits(node.project_id, node.path);
-    const latestCommit = node.commits[0];
-    node.version = latestCommit.version;
-    node.commits.reverse();
-    await node.save();
-    return { commits: node.commits.reverse().slice(skip, skip + limit), total: node.version };
+    file.commits = await service.gitlab.loadAllCommits(file.project_id, file.path);
+    const latestCommit = file.commits[0];
+    file.latest_commit = latestCommit;
+    file.commits.reverse();
+    await file.save();
+    return {
+      commits: file.commits.reverse().slice(skip, skip + limit),
+      total: file.latest_commit.version,
+      file,
+    };
   }
 }
 
