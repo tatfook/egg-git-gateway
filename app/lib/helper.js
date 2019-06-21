@@ -35,8 +35,8 @@ class Helper {
     return key;
   }
 
-  static commit_to_message(commit) {
-    return Stringifier.stringify_commit(commit);
+  static commit_to_message(message) {
+    return Stringifier.stringify_commit(message);
   }
 
   static serilize_file(file) {
@@ -47,8 +47,8 @@ class Helper {
     return Stringifier.stringify_tree(tree);
   }
 
-  static serilizeCommitRecord(commit) {
-    return Stringifier.stringifyCommitRecord(commit);
+  static serilizeCommitRecord(message) {
+    return Stringifier.stringifyCommitRecord(message);
   }
 
   static empty(obj) {

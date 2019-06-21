@@ -134,15 +134,15 @@ class FileController extends Controller {
       });
     file = files[files.length - 1];
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .create_file(file, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .create_file(file, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.created();
   }
 
@@ -169,15 +169,15 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .create_file(files, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .create_file(files, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.created();
   }
 
@@ -205,15 +205,15 @@ class FileController extends Controller {
       ctx.throw(500);
     });
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .update_file(file, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .update_file(file, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.updated();
   }
 
@@ -240,15 +240,15 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .delete_file(file, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .delete_file(file, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.deleted();
   }
 
@@ -287,15 +287,15 @@ class FileController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .move_file(file, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .move_file(file, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.moved();
   }
 

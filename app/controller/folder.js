@@ -84,15 +84,15 @@ class FolderController extends Controller {
       );
     subfiles.push(folder);
 
-    const commit_options = {
+    const message_options = {
       commit_message: ctx.params.commit_message ||
         `${ctx.state.user.username} delete folder ${folder.path}`,
       author: ctx.state.user.username,
       visibility: project.visibility,
     };
 
-    const commit = await ctx.model.Commit
-      .delete_file(subfiles, project._id, commit_options)
+    const message = await ctx.model.Message
+      .delete_file(subfiles, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
@@ -105,7 +105,7 @@ class FolderController extends Controller {
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.deleted();
   }
 
@@ -156,15 +156,15 @@ class FolderController extends Controller {
         ctx.throw(500);
       });
 
-    const commit_options = this.get_commit_options(project);
-    const commit = await ctx.model.Commit
-      .move_file(subfiles, project._id, commit_options)
+    const message_options = this.get_message_options(project);
+    const message = await ctx.model.Message
+      .move_file(subfiles, project._id, message_options)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
       });
 
-    await this.send_message(commit);
+    await this.send_message(message);
     this.moved();
   }
 }

@@ -16,27 +16,27 @@ class NodeController extends Controller {
     this.deleted();
   }
 
-  wrap_message(commit) {
+  wrap_message(message) {
     const { ctx } = this;
     const { helper } = ctx;
-    const key = commit.project_id;
+    const key = message.project_id;
     const topics = this.config.kafka.topics;
     const git_message = {
-      messages: commit._id,
+      messages: message._id,
       topic: topics.commit,
       key,
     };
     const es_message = {
-      messages: helper.commit_to_message(commit),
+      messages: helper.commit_to_message(message),
       topic: topics.elasticsearch,
       key,
     };
     return [ git_message, es_message ];
   }
 
-  async send_message(commit) {
+  async send_message(message) {
     const { ctx, service } = this;
-    const payloads = this.wrap_message(commit);
+    const payloads = this.wrap_message(message);
     await service.kafka.send(payloads)
       .catch(err => {
         ctx.logger.error(err);
@@ -124,7 +124,7 @@ class NodeController extends Controller {
     }
   }
 
-  get_commit_options(project) {
+  get_message_options(project) {
     const { ctx } = this;
     const { commit_message, source_version, encoding } = ctx.params;
     return {
