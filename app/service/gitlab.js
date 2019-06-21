@@ -284,7 +284,7 @@ class GitlabService extends Service {
     return { content: res.data };
   }
 
-  async load_commits(project_id, path, page = 1, per_page = 100) {
+  async loadCommits(project_id, path, page = 1, per_page = 100) {
     const res = await this.client
       .get(`/projects/${project_id}/repository/commits`, {
         params: { path, page, per_page },
@@ -293,14 +293,14 @@ class GitlabService extends Service {
     return commits;
   }
 
-  async load_all_commits(project_id, path) {
+  async loadAllCommits(project_id, path) {
     let page = 1;
     const per_page = 100;
-    let commits = await this.load_commits(project_id, path, page, per_page);
+    let commits = await this.loadCommits(project_id, path, page, per_page);
     const all = commits;
     while (commits.length >= 100) {
       page++;
-      commits = await this.load_commits(project_id, path, page, per_page);
+      commits = await this.loadCommits(project_id, path, page, per_page);
       all.push(...commits);
     }
     return serializeCommits(all);

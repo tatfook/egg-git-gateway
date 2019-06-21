@@ -159,9 +159,9 @@ module.exports = app => {
     return file;
   };
 
-  statics.get_commits = async function(project_id, path, skip = 0, limit = 20) {
-    const node = await this.findOne({ project_id, path })
-      .slice('commits', [ skip, skip + limit ]);
+  statics.getCommits = async function(project_id, path, skip = 0, limit = 20) {
+    const node = await this.findOne({ project_id, path });
+    node.commits = node.commits.reverse().slice(skip, skip + limit);
     return node;
   };
 
