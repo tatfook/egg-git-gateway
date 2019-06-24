@@ -24,13 +24,17 @@ class MessageFormatter {
   }
 
   static format_update_action(file, options) {
+    let version;
+    if (file.latest_commit) {
+      version = file.latest_commit.version;
+    }
     return {
       _id: file._id,
       action: 'update',
       file_path: file.path,
       content: file.content,
       encoding: options.encoding || 'text',
-      version: file.version,
+      version,
     };
   }
 
@@ -44,6 +48,10 @@ class MessageFormatter {
   }
 
   static format_move_action(file, options) {
+    let version;
+    if (file.latest_commit) {
+      version = file.latest_commit.version;
+    }
     return {
       _id: file._id,
       action: 'move',
@@ -51,7 +59,7 @@ class MessageFormatter {
       previous_path: file.previous_path,
       encoding: options.encoding || 'text',
       content: file.content,
-      version: file.version,
+      version,
     };
   }
 

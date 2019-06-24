@@ -1,11 +1,13 @@
 'use strict';
 
 const Controller = require('./node');
+const _ = require('lodash/object');
 
 const DEFAULT_BRANCH = 'master';
 const PENDING_TIP = 'pending';
 const ERROR_COMMIT_PENDING = 'Commit is pending';
 const CODE_NOT_FOUND = 404;
+const LATEST_FIELDS_TO_SHOW = [ 'version', 'createdAt' ];
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -109,8 +111,11 @@ class FileController extends Controller {
     ctx.body = {
       _id: file._id,
       content: file.content || '',
-      latest_commit: commit ? file.latest_commit : undefined,
     };
+
+    if (commit) {
+      ctx.body.commit = _.pick(file.latest_commit, LATEST_FIELDS_TO_SHOW);
+    }
   }
 
   /**
@@ -208,7 +213,7 @@ class FileController extends Controller {
       .update_file(file, project._id, message_options);
 
     await this.send_message(message);
-    this.updated({ commit: file.latest_commit });
+    this.updated({ commit: _.pick(file.latest_commit, LATEST_FIELDS_TO_SHOW) });
   }
 
   /**

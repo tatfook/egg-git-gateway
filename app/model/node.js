@@ -26,6 +26,12 @@ module.exports = app => {
     message: String,
   }, { timestamps: true });
 
+  const LastCommitSchema = new Schema({
+    version: Number,
+    source_version: Number,
+    message: String,
+  }, { timestamps: true });
+
   const NodeSchema = new Schema({
     name: String,
     path: String,
@@ -34,7 +40,7 @@ module.exports = app => {
     project_id: Number,
     account_id: Number,
     commits: [ CommitSchema ],
-    latest_commit: CommitSchema,
+    latest_commit: LastCommitSchema,
   }, { timestamps: true });
 
   NodeSchema.index({ project_id: 1, path: 1 });
