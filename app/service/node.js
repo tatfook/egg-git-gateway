@@ -32,8 +32,7 @@ class NodeService extends Service {
 
   async getFileWithCommits(file) {
     if (!file.latest_commit) {
-      console.log('here');
-      const result = await this.getCommits(file.project_id, file.path);
+      const result = await this.getCommits(file.project_id, file.path, 0, 10000);
       file = result.file;
     }
     return file;

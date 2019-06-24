@@ -24,10 +24,8 @@ class MessageFormatter {
   }
 
   static format_update_action(file, options) {
-    let version;
-    if (file.latest_commit) {
-      version = file.latest_commit.version;
-    }
+    file.latest_commit = file.latest_commit || {};
+    const { version } = file.latest_commit;
     return {
       _id: file._id,
       action: 'update',
@@ -48,10 +46,8 @@ class MessageFormatter {
   }
 
   static format_move_action(file, options) {
-    let version;
-    if (file.latest_commit) {
-      version = file.latest_commit.version;
-    }
+    file.latest_commit = file.latest_commit || {};
+    const { version } = file.latest_commit;
     return {
       _id: file._id,
       action: 'move',

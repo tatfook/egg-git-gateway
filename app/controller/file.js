@@ -7,7 +7,7 @@ const DEFAULT_BRANCH = 'master';
 const PENDING_TIP = 'pending';
 const ERROR_COMMIT_PENDING = 'Commit is pending';
 const CODE_NOT_FOUND = 404;
-const LATEST_FIELDS_TO_SHOW = [ 'version', 'createdAt' ];
+const LATEST_FIELDS_TO_SHOW = [ 'version', 'source_version', 'createdAt' ];
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -104,8 +104,7 @@ class FileController extends Controller {
     }
 
     if (commit && !file.latest_commit) {
-      const result = await service.node.getCommits(project._id, path);
-      file = result.file;
+      file = await service.node.getFileWithCommits(file);
     }
 
     ctx.body = {
@@ -199,13 +198,13 @@ class FileController extends Controller {
   async update() {
     const { ctx, service } = this;
     ctx.validate(update_rule);
-    const { path } = ctx.params;
+    const { path, source_version } = ctx.params;
     const project = await this.get_readable_project();
     let file = await this.get_existing_node(project._id, path, false);
     file = await service.node.getFileWithCommits(file);
 
     file.set({ content: ctx.params.content });
-    file.createCommit({ author: ctx.state.user.username });
+    file.createCommit({ author_name: ctx.state.user.username, source_version });
     await file.save();
 
     const message_options = this.get_message_options(project);
@@ -274,7 +273,7 @@ class FileController extends Controller {
     file.previous_name = file.name;
     file.name = this.get_file_name();
 
-    file.createCommit({ author: ctx.state.user.username });
+    file.createCommit({ author_name: ctx.state.user.username });
     await ctx.model.Node.move(file);
 
     const message_options = this.get_message_options(project);
