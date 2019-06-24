@@ -3,6 +3,8 @@
 const assert = require('assert');
 const Helper = require('../lib/helper');
 
+const PENDING_TIP = 'pending';
+
 const deserialize_tree = serilized_tree => {
   return JSON.parse(serilized_tree);
 };
@@ -35,6 +37,23 @@ module.exports = app => {
   }, { timestamps: true });
 
   NodeSchema.index({ project_id: 1, path: 1 });
+  const CommitModel = mongoose.model('Commit', CommitSchema);
+
+  const methods = NodeSchema.methods;
+
+  methods.createCommit = function(info) {
+    const lastCommit = this.latest_commit || {};
+    let baseInfo = {
+      version: (lastCommit.version || 0) + 1,
+      commit_id: PENDING_TIP,
+      short_id: PENDING_TIP,
+    };
+    baseInfo = Object.assign(baseInfo, info);
+    const commit = new CommitModel(baseInfo);
+    this.latest_commit = commit;
+    this.commits.push(commit);
+    return this;
+  };
 
   const statics = NodeSchema.statics;
 
@@ -152,7 +171,6 @@ module.exports = app => {
     let file;
     if (from_cache) {
       file = await this.load_content_cache_by_path(project_id, path);
-      console.log(file);
       if (!Helper.empty(file)) { return file; }
     }
     file = await this.get_by_path_from_db(project_id, path);

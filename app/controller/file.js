@@ -78,8 +78,7 @@ class FileController extends Controller {
 
     let project;
     if (commit) {
-      project = await this.get_readable_project();
-      // project = await this.get_writable_project();
+      project = await this.get_writable_project();
     } else {
       project = await this.get_readable_project();
     }
@@ -170,19 +169,11 @@ class FileController extends Controller {
 
     const nodes_to_create = files.concat(ancestors_to_create);
     files = await ctx.model.Node
-      .create(nodes_to_create)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .create(nodes_to_create);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .create_file(files, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .create_file(files, project._id, message_options);
 
     await this.send_message(message);
     this.created();
@@ -202,23 +193,19 @@ class FileController extends Controller {
   async update() {
     const { ctx } = this;
     ctx.validate(update_rule);
-    const path = ctx.params.path;
+    const { path } = ctx.params.path;
     const project = await this.get_writable_project();
     const file = await this.get_existing_node(project._id, path, false);
-    file.set({ content: ctx.params.content });
 
-    await file.save().catch(err => {
-      ctx.logger.error(err);
-      ctx.throw(500);
+    file.set({ content: ctx.params.content });
+    file.createCommit({
+      author: ctx.state.user.username,
     });
+    await file.save();
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .update_file(file, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .update_file(file, project._id, message_options);
 
     await this.send_message(message);
     this.updated({ commit: file.latest_commit });
@@ -241,11 +228,7 @@ class FileController extends Controller {
     const file = await this.get_existing_node(project._id, path, false);
 
     await ctx.model.Node
-      .delete_and_release_cache(file)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .delete_and_release_cache(file);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
@@ -288,19 +271,11 @@ class FileController extends Controller {
     file.previous_name = file.name;
     file.name = this.get_file_name();
 
-    await ctx.model.Node
-      .move(file).catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    await ctx.model.Node.move(file);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .move_file(file, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .move_file(file, project._id, message_options);
 
     await this.send_message(message);
     this.moved();

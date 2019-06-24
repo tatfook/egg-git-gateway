@@ -8,9 +8,9 @@ class NodeService extends Service {
   async getCommits(project_id, path, skip = 0, limit = 20) {
     const { ctx } = this;
     const file = await ctx.model.Node.getCommits(project_id, path, skip, limit);
-    if (file.type !== FILE_TYPE) return { commits: [], total: 0 };
     if (!file) ctx.throw(404, 'File not found');
-    if (file.commits.length > 0) {
+    if (file.type !== FILE_TYPE) return { commits: [], total: 0 };
+    if (file.latest_commit) {
       return { commits: file.commits, total: file.latest_commit.version, file };
     }
     return await this.getCommitsFromGitlab(file, skip, limit);

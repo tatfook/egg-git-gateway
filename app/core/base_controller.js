@@ -80,8 +80,8 @@ class Base_controllerController extends Controller {
 
   success(action = 'success', extraMsg = {}) {
     const { ctx } = this;
+    extraMsg[action] = true;
     ctx.body = extraMsg;
-    ctx[action] = true;
   }
 
   created(extraMsg) {
