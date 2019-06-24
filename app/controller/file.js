@@ -4,6 +4,8 @@ const Controller = require('./node');
 
 const DEFAULT_BRANCH = 'master';
 const PENDING_TIP = 'pending';
+const ERROR_COMMIT_PENDING = 'Commit is pending';
+const CODE_NOT_FOUND = 404;
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -75,7 +77,7 @@ class FileController extends Controller {
   */
   async show() {
     const { ctx, service } = this;
-    const { path, refresh_cache, ref = 'master', commit } = ctx.params;
+    const { path, refresh_cache, ref = DEFAULT_BRANCH, commit } = ctx.params;
 
     let project;
     if (commit) {
@@ -87,10 +89,10 @@ class FileController extends Controller {
     const from_cache = !refresh_cache;
     let file;
     if (ref !== DEFAULT_BRANCH) {
-      if (ref === PENDING_TIP) ctx.throw(404, 'Commit is pending');
+      if (ref === PENDING_TIP) ctx.throw(CODE_NOT_FOUND, ERROR_COMMIT_PENDING);
       file = await service.gitlab.load_file(project._id, path, ref)
         .catch(err => {
-          if (err.response.status === 404) {
+          if (err.response.status === CODE_NOT_FOUND) {
             ctx.throw(err.response.status, err.response.data.message);
           }
         });
@@ -285,7 +287,7 @@ class FileController extends Controller {
       .load_raw_file(project.git_path, ctx.params.path)
       .catch(err => {
         ctx.logger.error(err);
-        if (err.response.status === 404) {
+        if (err.response.status === CODE_NOT_FOUND) {
           this.throw_if_node_not_exist();
         }
         ctx.throw(500);

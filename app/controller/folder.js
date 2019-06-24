@@ -52,11 +52,7 @@ class FolderController extends Controller {
       account_id: project.account_id,
     });
 
-    await folder.save().catch(err => {
-      ctx.logger.error(err);
-      ctx.throw(500);
-    });
-
+    await folder.save();
     this.created();
   }
 
@@ -92,18 +88,10 @@ class FolderController extends Controller {
     };
 
     const message = await ctx.model.Message
-      .delete_file(subfiles, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .delete_file(subfiles, project._id, message_options);
 
     await ctx.model.Node
-      .delete_subfiles_and_release_cache(project._id, folder.path, subfiles)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .delete_subfiles_and_release_cache(project._id, folder.path, subfiles);
 
     await this.send_message(message);
     this.deleted();

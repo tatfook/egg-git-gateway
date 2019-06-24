@@ -13,6 +13,7 @@ module.exports = app => {
     file_path: String,
     previous_path: String,
     content: String,
+    version: Number,
     encoding: { type: String, default: 'text' },
   });
 

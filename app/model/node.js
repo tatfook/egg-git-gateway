@@ -313,18 +313,10 @@ module.exports = app => {
   statics.get_subfiles_by_path = async function(project_id, tree_path, pattern, get_self = true) {
     if (!pattern) { pattern = new RegExp(`^${tree_path}/.*`, 'u'); }
     const subfiles = await this.find({ project_id, path: pattern })
-      .limit(999999)
-      .catch(err => {
-        logger.error(err);
-        throw err;
-      });
+      .limit(999999);
 
     if (get_self) {
-      const folder = await this.findOne({ project_id, path: tree_path })
-        .catch(err => {
-          logger.error(err);
-          throw err;
-        });
+      const folder = await this.findOne({ project_id, path: tree_path });
       subfiles.push(folder);
     }
     return subfiles;
@@ -334,11 +326,7 @@ module.exports = app => {
   async function(project_id, tree_path, subfiles, remove_self = true) {
     const pattern = new RegExp(`^${tree_path}/.*`, 'u');
     if (!subfiles) {
-      subfiles = await this.get_subfiles_by_path(project_id, tree_path, pattern, remove_self)
-        .catch(err => {
-          logger.error(err);
-          throw err;
-        });
+      subfiles = await this.get_subfiles_by_path(project_id, tree_path, pattern, remove_self);
     }
     if (Helper.empty(subfiles)) { return; }
 

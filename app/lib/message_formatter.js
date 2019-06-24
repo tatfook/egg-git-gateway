@@ -30,6 +30,7 @@ class MessageFormatter {
       file_path: file.path,
       content: file.content,
       encoding: options.encoding || 'text',
+      version: file.version,
     };
   }
 
@@ -50,6 +51,7 @@ class MessageFormatter {
       previous_path: file.previous_path,
       encoding: options.encoding || 'text',
       content: file.content,
+      version: file.version,
     };
   }
 
