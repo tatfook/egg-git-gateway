@@ -9,7 +9,7 @@ class NodeService extends Service {
     const { ctx } = this;
     const file = await ctx.model.Node.getCommits(project_id, path, skip, limit);
     if (!file) ctx.throw(404, 'File not found');
-    if (file.type !== FILE_TYPE) return { commits: [], total: 0 };
+    if (file.type !== FILE_TYPE) return { commits: [], total: 0, file };
     if (file.latest_commit) {
       return { commits: file.commits, total: file.latest_commit.version, file };
     }
@@ -28,6 +28,15 @@ class NodeService extends Service {
       total: file.latest_commit.version,
       file,
     };
+  }
+
+  async getFileWithCommits(file) {
+    if (!file.latest_commit) {
+      console.log('here');
+      const result = await this.getCommits(file.project_id, file.path);
+      file = result.file;
+    }
+    return file;
   }
 }
 

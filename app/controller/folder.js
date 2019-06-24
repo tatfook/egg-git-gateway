@@ -121,7 +121,7 @@ class FolderController extends Controller {
   * @apiParam {String} new_path New path of the folder such as 'username/sitename/new'
   */
   async move() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     ctx.validate(move_rule);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
@@ -135,12 +135,12 @@ class FolderController extends Controller {
     folder.previous_name = folder.name;
     folder.name = this.get_file_name();
 
-    const subfiles = await ctx.model.Node
-      .get_subfiles_by_path(project._id, previous_path, null, false)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    let subfiles = await ctx.model.Node
+      .get_subfiles_by_path(project._id, previous_path, null, false);
+
+    subfiles = Promise.all(subfiles.map(file => {
+      return service.node.getFileWithCommits(file);
+    }));
 
     const pattern = new RegExp(`^${previous_path}`, 'u');
     for (const file of subfiles) {
@@ -149,20 +149,15 @@ class FolderController extends Controller {
     }
     subfiles.push(folder);
 
-    const tasks = subfiles.map(file => { return file.save(); });
-    await Promise.all(tasks)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    const tasks = subfiles.map(file => {
+      file.createCommit({ author: ctx.state.user.username });
+      return file.save();
+    });
+    await Promise.all(tasks);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .move_file(subfiles, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .move_file(subfiles, project._id, message_options);
 
     await this.send_message(message);
     this.moved();

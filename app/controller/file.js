@@ -3,6 +3,7 @@
 const Controller = require('./node');
 
 const DEFAULT_BRANCH = 'master';
+const PENDING_TIP = 'pending';
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -86,7 +87,13 @@ class FileController extends Controller {
     const from_cache = !refresh_cache;
     let file;
     if (ref !== DEFAULT_BRANCH) {
-      file = await service.gitlab.load_file(project._id, path, ref);
+      if (ref === PENDING_TIP) ctx.throw(404, 'Commit is pending');
+      file = await service.gitlab.load_file(project._id, path, ref)
+        .catch(err => {
+          if (err.response.status === 404) {
+            ctx.throw(err.response.status, err.response.data.message);
+          }
+        });
     } else {
       file = await this.get_node(project._id, path, from_cache);
       file = file || await this.load_from_gitlab(project);
@@ -118,7 +125,7 @@ class FileController extends Controller {
   async create() {
     const { ctx } = this;
     ctx.validate(create_rule);
-    const path = ctx.params.path;
+    const { path } = ctx.params;
     const project = await this.get_writable_project();
     await this.ensure_node_not_exist(project._id, path);
     const nodes_to_create = await ctx.model.Node
@@ -133,20 +140,12 @@ class FileController extends Controller {
 
     nodes_to_create.push(file);
     const files = await ctx.model.Node
-      .create(nodes_to_create)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .create(nodes_to_create);
     file = files[files.length - 1];
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .create_file(file, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .create_file(file, project._id, message_options);
 
     await this.send_message(message);
     this.created();
@@ -156,7 +155,7 @@ class FileController extends Controller {
     const { ctx } = this;
     ctx.validate(create_many_rule);
     const project = await this.get_writable_project();
-    let files = ctx.params.files;
+    let { files } = ctx.params;
     this.ensure_unique(files);
     await this.ensure_nodes_not_exist(project._id, files);
     const ancestors_to_create = await ctx.model.Node
@@ -191,16 +190,15 @@ class FileController extends Controller {
   * @apiParam {String} content Content of the file
   */
   async update() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     ctx.validate(update_rule);
-    const { path } = ctx.params.path;
-    const project = await this.get_writable_project();
-    const file = await this.get_existing_node(project._id, path, false);
+    const { path } = ctx.params;
+    const project = await this.get_readable_project();
+    let file = await this.get_existing_node(project._id, path, false);
+    file = await service.node.getFileWithCommits(file);
 
     file.set({ content: ctx.params.content });
-    file.createCommit({
-      author: ctx.state.user.username,
-    });
+    file.createCommit({ author: ctx.state.user.username });
     await file.save();
 
     const message_options = this.get_message_options(project);
@@ -232,11 +230,7 @@ class FileController extends Controller {
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .delete_file(file, project._id, message_options)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+      .delete_file(file, project._id, message_options);
 
     await this.send_message(message);
     this.deleted();
@@ -255,22 +249,25 @@ class FileController extends Controller {
   * @apiParam {String} [content] Content of the file
   */
   async move() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     ctx.validate(move_rule);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.get_writable_project();
-    const file = await this.get_existing_node(project._id, previous_path, false);
+    let file = await this.get_existing_node(project._id, previous_path, false);
+    file = await service.node.getFileWithCommits(file);
     await this.ensure_node_not_exist(project._id, new_path);
     await this.ensure_parent_exist(project.account_id, project._id, new_path);
+    file = await service.node.getFileWithCommits(file);
 
-    const content = ctx.params.content;
+    const { content } = ctx.params;
     if (content) { file.content = content; }
     file.previous_path = previous_path;
     file.path = new_path;
     file.previous_name = file.name;
     file.name = this.get_file_name();
 
+    file.createCommit({ author: ctx.state.user.username });
     await ctx.model.Node.move(file);
 
     const message_options = this.get_message_options(project);
@@ -279,12 +276,6 @@ class FileController extends Controller {
 
     await this.send_message(message);
     this.moved();
-  }
-
-  async dump() {
-    const { ctx } = this;
-    const file = await this.load_from_gitlab();
-    ctx.body = { content: file.content };
   }
 
   async load_from_gitlab(project) {
@@ -303,62 +294,8 @@ class FileController extends Controller {
     file.name = this.get_file_name(file.path);
     file.project_id = project._id;
     file.account_id = project.account_id;
-    await ctx.model.Node.create(file)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    await ctx.model.Node.create(file);
     return file;
-  }
-
-  async migrate() {
-    const { ctx } = this;
-    ctx.ensureAdmin();
-    ctx.validate(create_rule);
-    const path = ctx.params.path;
-    const project = await this.get_project();
-    await this.ensure_node_not_exist(project._id, path);
-    const ancestors_to_create = await ctx.model.Node
-      .get_parents_not_exist(project.account_id, project._id, path);
-    const file = {
-      name: this.get_file_name(path),
-      content: ctx.params.content,
-      path,
-      project_id: project._id,
-      account_id: project.account_id,
-    };
-    const nodes_to_create = ancestors_to_create.push(file);
-    await ctx.model.Node
-      .create(nodes_to_create)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-    this.created();
-  }
-
-  async migrate_many() {
-    const { ctx } = this;
-    ctx.ensureAdmin();
-    ctx.validate(create_many_rule);
-    const project = await this.get_project();
-    const files = ctx.params.files;
-    this.ensure_unique(files);
-    const ancestors_to_create = await ctx.model.Node
-      .get_parents_not_exist(project.account_id, project._id, files);
-    for (const file of files) {
-      file.name = this.get_file_name(file.path);
-      file.project_id = project._id;
-      file.account_id = project.account_id;
-    }
-    const nodes_to_create = files.concat(ancestors_to_create);
-    await ctx.model.Node
-      .create(nodes_to_create)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-    this.created();
   }
 }
 

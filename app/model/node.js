@@ -4,6 +4,7 @@ const assert = require('assert');
 const Helper = require('../lib/helper');
 
 const PENDING_TIP = 'pending';
+const FOLDER_TYPE = 'tree';
 
 const deserialize_tree = serilized_tree => {
   return JSON.parse(serilized_tree);
@@ -42,7 +43,9 @@ module.exports = app => {
   const methods = NodeSchema.methods;
 
   methods.createCommit = function(info) {
-    const lastCommit = this.latest_commit || {};
+    if (this.type === FOLDER_TYPE) return;
+    const lastCommit = this.latest_commit;
+    if (!lastCommit) return;
     let baseInfo = {
       version: (lastCommit.version || 0) + 1,
       commit_id: PENDING_TIP,
@@ -142,7 +145,7 @@ module.exports = app => {
       );
       keys_to_release.push(file_key);
 
-      if (file.type === 'tree') {
+      if (file.type === FOLDER_TYPE) {
         const tree_key = Helper.generate_tree_key(
           file.project_id || project_id,
           file.previous_path || file.path
@@ -268,7 +271,7 @@ module.exports = app => {
       if (Helper.empty(parent)) {
         ancestors_to_create[path] = {
           name: node_name,
-          type: 'tree',
+          type: FOLDER_TYPE,
           path,
           project_id,
           account_id,
