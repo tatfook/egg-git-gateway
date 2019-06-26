@@ -7,7 +7,9 @@ const DEFAULT_BRANCH = 'master';
 const PENDING_TIP = 'pending';
 const ERROR_COMMIT_PENDING = 'Commit is pending';
 const CODE_NOT_FOUND = 404;
-const LATEST_FIELDS_TO_SHOW = [ 'version', 'source_version', 'createdAt' ];
+const LATEST_FIELDS_TO_SHOW = [
+  'version', 'source_version', 'author_name', 'createdAt',
+];
 
 const create_rule = {
   branch: { type: 'string', default: 'master', required: false },
@@ -294,7 +296,6 @@ class FileController extends Controller {
         if (err.response.status === CODE_NOT_FOUND) {
           this.throw_if_node_not_exist();
         }
-        ctx.throw(500);
       });
     file.path = ctx.params.path;
     file.name = this.get_file_name(file.path);
