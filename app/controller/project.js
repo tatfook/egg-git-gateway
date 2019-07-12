@@ -162,7 +162,9 @@ class ProjectController extends Controller {
     const { path, file_path } = ctx.params;
     const { skip, limit } = ctx.helper.paginate(ctx.params);
     const project = await this.get_readable_project(path, false);
-    ctx.body = await service.node.getCommits(project._id, file_path, skip, limit);
+    const { commit, total } = await service.node
+      .getCommits(project._id, file_path, skip, limit);
+    ctx.body = { commit, total };
   }
 
   async ensure_project_not_exist(project_path) {
