@@ -14,12 +14,14 @@ class MessageFormatter {
   }
 
   static format_create_action(file, options) {
+    const { version } = file.latest_commit;
     return {
       _id: file._id,
       action: 'create',
       file_path: file.path,
       content: file.content,
       encoding: options.encoding || 'text',
+      version,
     };
   }
 

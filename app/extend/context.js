@@ -41,7 +41,7 @@ module.exports = {
     await this.service.keepwork
       .getUserProfile(token)
       .catch(err => {
-        this.ctx.logger.error(err);
+        this.logger.error(err);
         const errMsg = 'Invalid token';
         this.throw(401, errMsg);
       });

@@ -1,6 +1,7 @@
 'use strict';
 
 const Service = require('egg').Service;
+const _ = require('lodash');
 
 const FILE_TYPE = 'blob';
 
@@ -18,16 +19,19 @@ class NodeService extends Service {
 
   async getCommitsFromGitlab(file, skip, limit) {
     const { service } = this;
+    let commits = [];
+    let total = 0;
     file.commits = await service.gitlab.loadAllCommits(file.project_id, file.path);
     const latestCommit = file.commits[0];
-    file.latest_commit = latestCommit;
-    file.commits.reverse();
-    await file.save();
-    return {
-      commits: file.commits.reverse().slice(skip, skip + limit),
-      total: file.latest_commit.version,
-      file,
-    };
+    file.latest_commit = latestCommit || {};
+
+    if (!_.isEmpty(file.commits)) {
+      file.commits.reverse();
+      await file.save();
+      commits = file.commits.reverse().slice(skip, skip + limit);
+      total = file.latest_commit.version;
+    }
+    return { commits, total, file };
   }
 
   async getFileWithCommits(file) {

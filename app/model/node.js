@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const _ = require('lodash');
 const Helper = require('../lib/helper');
 
 const PENDING_TIP = 'pending';
@@ -16,6 +17,8 @@ module.exports = app => {
   const Schema = mongoose.Schema;
   const logger = app.logger;
   const cache_expire = app.config.cache_expire;
+
+  let Model;
 
   const CommitSchema = new Schema({
     commit_id: String,
@@ -51,8 +54,9 @@ module.exports = app => {
 
   methods.createCommit = function(info) {
     if (this.type === FOLDER_TYPE) return;
-    const lastCommit = this.latest_commit;
-    if (!lastCommit) return;
+    this.commits = this.commits || [];
+    const lastCommit = this.latest_commit || {};
+    if (_.isEmpty(lastCommit) && !info.new) return;
     let baseInfo = {
       version: (lastCommit.version || 0) + 1,
       commit_id: PENDING_TIP,
@@ -397,5 +401,15 @@ module.exports = app => {
       });
   });
 
-  return mongoose.model('Node', NodeSchema);
+  statics.createAndCommit = async function(info, ...files) {
+    const instances = files.map(file => {
+      const instance = new Model(file);
+      instance.createCommit(info);
+      return instance;
+    });
+    return await this.create(instances);
+  };
+
+  Model = mongoose.model('Node', NodeSchema);
+  return Model;
 };

@@ -6,7 +6,7 @@ const _ = require('lodash/object');
 const DEFAULT_BRANCH = 'master';
 const PENDING_TIP = 'pending';
 const ERROR_COMMIT_PENDING = 'Commit is pending';
-const CODE_NOT_FOUND = 404;
+const HTTP_NOT_FOUND_STATUS = 404;
 const LATEST_FIELDS_TO_SHOW = [
   'version', 'source_version', 'author_name', 'createdAt',
 ];
@@ -93,10 +93,10 @@ class FileController extends Controller {
     const from_cache = !refresh_cache;
     let file;
     if (ref !== DEFAULT_BRANCH) {
-      if (ref === PENDING_TIP) ctx.throw(CODE_NOT_FOUND, ERROR_COMMIT_PENDING);
+      if (ref === PENDING_TIP) ctx.throw(HTTP_NOT_FOUND_STATUS, ERROR_COMMIT_PENDING);
       file = await service.gitlab.load_file(project._id, path, ref)
         .catch(err => {
-          if (err.response.status === CODE_NOT_FOUND) {
+          if (err.response.status === HTTP_NOT_FOUND_STATUS) {
             ctx.throw(err.response.status, err.response.data.message);
           }
         });
@@ -147,8 +147,10 @@ class FileController extends Controller {
     };
 
     nodes_to_create.push(file);
+    const author_name = ctx.state.user.username;
+    const commitInfo = { author_name, new: true };
     const files = await ctx.model.Node
-      .create(nodes_to_create);
+      .createAndCommit(commitInfo, ...nodes_to_create);
     file = files[files.length - 1];
 
     const message_options = this.get_message_options(project);
@@ -175,8 +177,11 @@ class FileController extends Controller {
     }
 
     const nodes_to_create = files.concat(ancestors_to_create);
+
+    const author_name = ctx.state.user.username;
+    const commitInfo = { author_name, new: true };
     files = await ctx.model.Node
-      .create(nodes_to_create);
+      .createAndCommit(commitInfo, ...nodes_to_create);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
@@ -293,7 +298,7 @@ class FileController extends Controller {
       .load_raw_file(project.git_path, ctx.params.path)
       .catch(err => {
         ctx.logger.error(err);
-        if (err.response.status === CODE_NOT_FOUND) {
+        if (err.response.status === HTTP_NOT_FOUND_STATUS) {
           this.throw_if_node_not_exist();
         }
       });
