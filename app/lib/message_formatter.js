@@ -75,7 +75,7 @@ class MessageFormatter {
     return actions;
   }
 
-  static create_file(files, project_id, options) {
+  static createFile(files, project_id, options) {
     const actions = this.format_actions(files, this.format_create_action, options);
     let default_message = `${options.author} create file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} create files`; }
@@ -83,7 +83,7 @@ class MessageFormatter {
     return this.output(actions, project_id, options);
   }
 
-  static update_file(files, project_id, options) {
+  static updateFile(files, project_id, options) {
     const actions = this.format_actions(files, this.format_update_action, options);
     let default_message = `${options.author} update file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} update files`; }
@@ -91,7 +91,7 @@ class MessageFormatter {
     return this.output(actions, project_id, options);
   }
 
-  static delete_file(files, project_id, options) {
+  static deleteFile(files, project_id, options) {
     const actions = this.format_actions(files, this.format_delete_action, options);
     let default_message = `${options.author} delete file ${files.path}`;
     if (files instanceof Array) { default_message = `${options.author} delete files`; }
@@ -99,7 +99,7 @@ class MessageFormatter {
     return this.output(actions, project_id, options);
   }
 
-  static move_file(files, project_id, options) {
+  static moveFile(files, project_id, options) {
     const actions = this.format_actions(files, this.format_move_action, options);
     let default_message =
       `${options.author} move file from ${files.previous_path} to ${files.path}`;

@@ -23,11 +23,11 @@ describe('test/app/service/gitlab.test.js', () => {
         password: '12345678',
         email: 'testbackend1@paracraft.cn',
       };
-      const account = await GitlabService.create_account(user);
+      const account = await GitlabService.createAccount(user);
       assert(account.username === user.username);
       assert(account._id);
       assert(account.name === user.name);
-      await GitlabService.delete_account(account._id);
+      await GitlabService.deleteAccount(account._id);
     });
   });
 
@@ -39,7 +39,7 @@ describe('test/app/service/gitlab.test.js', () => {
         hook_url: 'http://localhost:8099/api/wiki/models/data_source/gitlabWebhook',
         visibility: 'public',
       };
-      result = await GitlabService.create_project(project_to_create);
+      result = await GitlabService.createProject(project_to_create);
       assert(result._id);
       assert(result.visibility === 'public');
       assert(result.name);
@@ -47,12 +47,12 @@ describe('test/app/service/gitlab.test.js', () => {
     });
 
     it('should update the visibility of a project', async () => {
-      result = await GitlabService.update_project_visibility(result._id, 'private');
+      result = await GitlabService.updateProjectVisibility(result._id, 'private');
       assert(result.visibility === 'private');
     });
 
     it('should delete a project', async () => {
-      await GitlabService.delete_project(result._id);
+      await GitlabService.deleteProject(result._id);
     });
   });
 });

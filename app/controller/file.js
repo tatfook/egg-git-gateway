@@ -11,7 +11,7 @@ const LATEST_FIELDS_TO_SHOW = [
   'version', 'source_version', 'author_name', 'createdAt',
 ];
 
-const create_rule = {
+const CREATE_RULE = {
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false, allowEmpty: true },
   commit_message: { type: 'string', required: false },
@@ -23,7 +23,7 @@ const create_rule = {
   },
 };
 
-const create_many_rule = {
+const CREATE_MANY_RULE = {
   branch: { type: 'string', default: 'master', required: false },
   files: {
     type: 'array',
@@ -42,7 +42,7 @@ const create_many_rule = {
   },
 };
 
-const update_rule = {
+const UPDATE_RULE = {
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', allowEmpty: true },
   commit_message: { type: 'string', required: false },
@@ -54,7 +54,7 @@ const update_rule = {
   },
 };
 
-const move_rule = {
+const MOVE_RULE = {
   new_path: 'string',
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false, allowEmpty: true },
@@ -132,14 +132,14 @@ class FileController extends Controller {
   */
   async create() {
     const { ctx } = this;
-    ctx.validate(create_rule);
+    ctx.validate(CREATE_RULE);
     const { path } = ctx.params;
     const project = await this.get_writable_project();
     await this.ensure_node_not_exist(project._id, path);
     const nodes_to_create = await ctx.model.Node
-      .get_parents_not_exist(project.account_id, project._id, path);
+      .getParentsNotExist(project.account_id, project._id, path);
     let file = {
-      name: this.get_file_name(path),
+      name: this.getFileName(path),
       content: ctx.params.content,
       path,
       project_id: project._id,
@@ -155,23 +155,23 @@ class FileController extends Controller {
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .create_file(file, project._id, message_options);
+      .createFile(file, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.created();
   }
 
   async create_many() {
     const { ctx } = this;
-    ctx.validate(create_many_rule);
+    ctx.validate(CREATE_MANY_RULE);
     const project = await this.get_writable_project();
     let { files } = ctx.params;
     this.ensure_unique(files);
     await this.ensure_nodes_not_exist(project._id, files);
     const ancestors_to_create = await ctx.model.Node
-      .get_parents_not_exist(project.account_id, project._id, files);
+      .getParentsNotExist(project.account_id, project._id, files);
     for (const file of files) {
-      file.name = this.get_file_name(file.path);
+      file.name = this.getFileName(file.path);
       file.project_id = project._id;
       file.account_id = project.account_id;
     }
@@ -185,9 +185,9 @@ class FileController extends Controller {
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .create_file(files, project._id, message_options);
+      .createFile(files, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.created();
   }
 
@@ -204,7 +204,7 @@ class FileController extends Controller {
   */
   async update() {
     const { ctx, service } = this;
-    ctx.validate(update_rule);
+    ctx.validate(UPDATE_RULE);
     const { path, source_version } = ctx.params;
     const project = await this.get_readable_project();
     let file = await this.get_existing_node(project._id, path, false);
@@ -216,9 +216,9 @@ class FileController extends Controller {
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .update_file(file, project._id, message_options);
+      .updateFile(file, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.updated({ commit: _.pick(file.latest_commit, LATEST_FIELDS_TO_SHOW) });
   }
 
@@ -239,13 +239,13 @@ class FileController extends Controller {
     const file = await this.get_existing_node(project._id, path, false);
 
     await ctx.model.Node
-      .delete_and_release_cache(file);
+      .deleteAndReleaseCache(file);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .delete_file(file, project._id, message_options);
+      .deleteFile(file, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.deleted();
   }
 
@@ -263,14 +263,14 @@ class FileController extends Controller {
   */
   async move() {
     const { ctx, service } = this;
-    ctx.validate(move_rule);
+    ctx.validate(MOVE_RULE);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.get_writable_project();
     let file = await this.get_existing_node(project._id, previous_path, false);
     file = await service.node.getFileWithCommits(file);
     await this.ensure_node_not_exist(project._id, new_path);
-    await this.ensure_parent_exist(project.account_id, project._id, new_path);
+    await this.ensureParentExist(project.account_id, project._id, new_path);
     file = await service.node.getFileWithCommits(file);
 
     const { content } = ctx.params;
@@ -278,16 +278,16 @@ class FileController extends Controller {
     file.previous_path = previous_path;
     file.path = new_path;
     file.previous_name = file.name;
-    file.name = this.get_file_name();
+    file.name = this.getFileName();
 
     file.createCommit({ author_name: ctx.state.user.username });
     await ctx.model.Node.move(file);
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .move_file(file, project._id, message_options);
+      .moveFile(file, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.moved();
   }
 
@@ -303,7 +303,7 @@ class FileController extends Controller {
         }
       });
     file.path = ctx.params.path;
-    file.name = this.get_file_name(file.path);
+    file.name = this.getFileName(file.path);
     file.project_id = project._id;
     file.account_id = project.account_id;
     await ctx.model.Node.create(file);

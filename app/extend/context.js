@@ -6,17 +6,25 @@ const isAdmin = user => {
   return user.roleId === 10;
 };
 
+const HTTP_AUTH_REQUIRED_STATUS = 401;
+const HTTP_NOT_ALLOWED_STATUS = 403;
+
+const NOT_ALLOWED_ERROR_MSG = 'Not allowed to access this protected resource';
+const AUTH_REQUIRED_ERROR_MSG = 'Valid authorization token was required';
+const INVALID_TOKEN_ERROR_MSG = 'Invalid token';
+
 module.exports = {
   verify() {
     let errMsg;
     this.state = this.state || {};
     if (empty(this.state.user)) {
-      errMsg = 'Valid authorization token was required';
+      errMsg = AUTH_REQUIRED_ERROR_MSG;
     } else if (!this.state.user.userId || !this.state.user.username) {
-      errMsg = 'Invalid token';
+      errMsg = INVALID_TOKEN_ERROR_MSG;
     }
-    if (errMsg) { this.throw(401, errMsg); }
+    if (errMsg) { this.throw(HTTP_AUTH_REQUIRED_STATUS, errMsg); }
   },
+
   async ensurePermission(site_id, type) {
     this.verify();
     if (isAdmin(this.state.user)) { return; }
@@ -24,26 +32,27 @@ module.exports = {
     const permitted = await this.service.keepwork
       .ensurePermission(token, site_id, type);
     if (!permitted) {
-      const errMsg = 'Not allowed to access this protected resource';
-      this.throw(403, errMsg);
+      this.throw(HTTP_NOT_ALLOWED_STATUS, NOT_ALLOWED_ERROR_MSG);
     }
   },
+
   ensureAdmin() {
-    const errMsg = 'Not allowed to access this protected resource';
+    const errMsg = NOT_ALLOWED_ERROR_MSG;
     this.state = this.state || {};
     this.state.user = this.state.user || {};
     const not_permitted = empty(this.state.user) || !isAdmin(this.state.user);
-    if (not_permitted) { this.throw(403, errMsg); }
+    if (not_permitted) { this.throw(HTTP_NOT_ALLOWED_STATUS, errMsg); }
   },
+
   async validateToken() {
     this.verify();
     const token = this.headers.authorization;
     await this.service.keepwork
       .getUserProfile(token)
       .catch(err => {
-        this.logger.error(err);
-        const errMsg = 'Invalid token';
-        this.throw(401, errMsg);
+        this.ctx.logger.error(err);
+        const errMsg = INVALID_TOKEN_ERROR_MSG;
+        this.throw(HTTP_AUTH_REQUIRED_STATUS, errMsg);
       });
     return true;
   },

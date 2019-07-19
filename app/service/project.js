@@ -16,7 +16,7 @@ class ProjectService extends Service {
     const { ctx } = this;
     path = path || ctx.params.project_path || ctx.params.path;
     const project = await ctx.model.Project
-      .get_by_path(path, fromCache);
+      .getByPath(path, fromCache);
     return project;
   }
 
@@ -28,7 +28,7 @@ class ProjectService extends Service {
     // 删除相关数据
     await ctx.model.Node.deleteProject(project._id);
     await service.gitlab.deleteProject(project._id);
-    await ctx.model.Project.delete_and_release_cache(project.path);
+    await ctx.model.Project.deleteAndReleaseCache(project.path);
     return project;
   }
 

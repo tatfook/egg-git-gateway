@@ -30,7 +30,7 @@ describe('test/app/model/account.test.js', () => {
   });
 
   it('should release the cache after deleted', async () => {
-    await AccountModel.delete_and_release_cache_by_kw_username(account.kw_username);
+    await AccountModel.deleteAndReleaseCache_by_kw_username(account.kw_username);
     const cached_data = await AccountModel.load_cache_by_kw_username(account.kw_username);
     assert(!cached_data);
   });

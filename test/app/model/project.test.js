@@ -30,7 +30,7 @@ describe('test/app/model/project.test.js', () => {
   });
 
   it('should get project from db', async () => {
-    const loaded_project = await ProjectModel.get_by_path_from_db(project.path);
+    const loaded_project = await ProjectModel.getByPathFromDB(project.path);
     assert(loaded_project._id === project._id);
     assert(loaded_project.visibility === project.visibility);
     assert(loaded_project.name === project.name);
@@ -54,7 +54,7 @@ describe('test/app/model/project.test.js', () => {
   });
 
   it('should release cache after updated', async () => {
-    const loaded_project = await ProjectModel.get_by_path_from_db(project.path);
+    const loaded_project = await ProjectModel.getByPathFromDB(project.path);
     loaded_project.visibility = 'public';
     await loaded_project.save();
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
@@ -62,7 +62,7 @@ describe('test/app/model/project.test.js', () => {
   });
 
   it('should release the cache after deleted', async () => {
-    await ProjectModel.delete_and_release_cache(project.path);
+    await ProjectModel.deleteAndReleaseCache(project.path);
     const cached_data = await ProjectModel.load_cache_by_path(project.path);
     assert(!cached_data);
   });

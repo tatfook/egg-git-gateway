@@ -2,13 +2,13 @@
 
 const assert = require('assert');
 const fast_JSON = require('fast-json-stringify');
-const { empty, generate_project_key, generate_tree_key } = require('../lib/helper');
+const _ = require('lodash');
+const { generateProjectKey, generateTreeKey } = require('../lib/helper');
 
 module.exports = app => {
   const redis = app.redis;
   const mongoose = app.mongoose;
   const Schema = mongoose.Schema;
-  const logger = app.logger;
   const cache_expire = app.config.cache_expire;
 
   const ProjectSchema = new Schema({
@@ -40,103 +40,84 @@ module.exports = app => {
   const statics = ProjectSchema.statics;
 
   statics.cache = async function(project) {
-    const key = generate_project_key(project.path);
+    const key = generateProjectKey(project.path);
     const serilized_project = stringify(project);
-    await redis.setex(key, cache_expire, serilized_project)
-      .catch(err => {
-        logger.error(`fail to cache project ${key}`);
-        logger.error(err);
-      });
+    await redis.setex(key, cache_expire, serilized_project);
   };
 
-  statics.release_cache = async function(path, pipeline = redis.pipeline()) {
-    this.release_content_cache(path, pipeline);
-    this.release_tree_cache(path, pipeline);
-    await pipeline.exec()
-      .catch(err => {
-        logger.error(`fail to release cache of project ${path}`);
-        logger.error(err);
-      });
+  statics.releaseCache = async function(path, pipeline = redis.pipeline()) {
+    this.releaseContentCache(path, pipeline);
+    this.releaseTreeCache(path, pipeline);
+    await pipeline.exec();
   };
 
-  statics.release_content_cache = async function(path, pipeline = redis.pipeline()) {
-    const key = generate_project_key(path);
+  statics.releaseContentCache = async function(path, pipeline = redis.pipeline()) {
+    const key = generateProjectKey(path);
     pipeline.del(key);
   };
 
-  statics.release_tree_cache = function(path, pipeline = redis.pipeline()) {
-    const key = generate_tree_key(path);
+  statics.releaseTreeCache = function(path, pipeline = redis.pipeline()) {
+    const key = generateTreeKey(path);
     pipeline.del(key);
   };
 
   statics.load_cache_by_path = async function(path) {
-    const key = generate_project_key(path);
-    const project = await redis.get(key)
-      .catch(err => {
-        logger.error(err);
-      });
+    const key = generateProjectKey(path);
+    const project = await redis.get(key);
     return JSON.parse(project);
   };
 
-  statics.get_by_path = async function(path, from_cache = true) {
+  statics.getByPath = async function(path, from_cache = true) {
     let project;
 
     // load from cache
     if (from_cache) {
       project = await this.load_cache_by_path(path);
-      if (!empty(project)) { return project; }
+      if (!_.isEmpty(project)) { return project; }
     }
     // load from db
-    project = await this.get_by_path_from_db(path);
+    project = await this.getByPathFromDB(path);
     return project;
   };
 
-  statics.get_by_path_from_db = async function(path) {
-    const project = await this.findOne({ path })
-      .catch(err => { logger.error(err); });
-    if (!empty(project)) {
+  statics.getByPathFromDB = async function(path) {
+    const project = await this.findOne({ path });
+    if (!_.isEmpty(project)) {
       await this.cache(project);
       return project;
     }
   };
 
-  statics.delete_and_release_cache = async function(path) {
-    await this.release_cache(path);
-    await this.deleteOne({ path })
-      .catch(err => {
-        throw err;
-      });
+  statics.deleteAndReleaseCache = async function(path) {
+    await this.releaseCache(path);
+    await this.deleteOne({ path });
   };
 
-  statics.release_multi_projects_cache = async function(projects, pipeline = redis.pipeline()) {
+  statics.releaseMultiProjectsCache = async function(projects, pipeline = redis.pipeline()) {
     const keys_to_release = [];
     for (const project of projects) {
-      keys_to_release.push(generate_project_key(project.path));
-      keys_to_release.push(generate_tree_key(project.path));
+      keys_to_release.push(generateProjectKey(project.path));
+      keys_to_release.push(generateTreeKey(project.path));
     }
     pipeline.del(keys_to_release);
     return pipeline;
   };
 
-  statics.delete_and_release_by_query = async function(query) {
+  statics.deleteAndReleaseByQuery = async function(query) {
     const projects = await this.find(query).limit(99999999);
-    if (empty(projects)) { return; }
-    const pipeline = await this.release_multi_projects_cache(projects);
+    if (_.isEmpty(projects)) { return; }
+    const pipeline = await this.releaseMultiProjectsCache(projects);
     await pipeline.exec();
     await this.deleteMany(query);
   };
 
-  statics.delete_account = async function(account_id) {
+  statics.deleteAccount = async function(account_id) {
     assert(account_id);
-    await this.delete_and_release_by_query({ account_id })
-      .catch(err => {
-        logger.error(err);
-        throw err;
-      });
+    await this.deleteAndReleaseByQuery({ account_id });
   };
 
   ProjectSchema.post('save', async function(project) {
-    await statics.release_cache(project.path);
+    await statics.releaseCache(project.path);
   });
 
   return mongoose.model('Project', ProjectSchema);

@@ -3,23 +3,23 @@
 const Stringifier = require('./stringifier');
 
 class Helper {
-  static generate_file_key(project_id, path) {
+  static generateFileKey(project_id, path) {
     return `project:${project_id}:file:${path}`;
   }
 
-  static generate_tree_key(project_id, path) {
+  static generateTreeKey(project_id, path) {
     return `project:${project_id}:tree:${path}`;
   }
 
-  static generate_project_key(path) {
+  static generateProjectKey(path) {
     return `project:${path}`;
   }
 
-  static generate_account_key(kw_username) {
+  static generateAccountKey(kw_username) {
     return `account:${kw_username}`;
   }
 
-  static project_to_message(project, method) {
+  static projectToMessage(project, method) {
     return Stringifier.stringify_project({
       _id: project._id,
       visibility: project.visibility,
@@ -35,15 +35,15 @@ class Helper {
     return key;
   }
 
-  static commit_to_message(message) {
+  static commitToMessage(message) {
     return Stringifier.stringify_commit(message);
   }
 
-  static serilize_file(file) {
+  static serilizeFile(file) {
     return Stringifier.stringify_file(file);
   }
 
-  static serilize_tree(tree) {
+  static serilizeTree(tree) {
     return Stringifier.stringify_tree(tree);
   }
 

@@ -16,7 +16,7 @@ module.exports = app => {
   router.del('/accounts/:kw_username', controller.account.remove);
 
   router.post('/projects/user/:kw_username', controller.project.create);
-  router.put('/projects/:path/visibility', controller.project.update_visibility);
+  router.put('/projects/:path/visibility', controller.project.updateVisibility);
   router.del('/projects/:path', controller.project.remove);
   router.get('/projects/:path/exist', controller.project.exist);
   router.get('/projects/:path/commits/:file_path', controller.project.getCommits);

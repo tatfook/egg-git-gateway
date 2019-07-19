@@ -8,7 +8,7 @@ class NodeController extends Controller {
     ctx.ensureAdmin();
     const project = await this.get_project();
     await ctx.model.Node
-      .delete_project(project._id)
+      .deleteProject(project._id)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
@@ -16,7 +16,7 @@ class NodeController extends Controller {
     this.deleted();
   }
 
-  wrap_message(message) {
+  wrapMessage(message) {
     const { ctx } = this;
     const { helper } = ctx;
     const key = message.project_id;
@@ -27,26 +27,26 @@ class NodeController extends Controller {
       key,
     };
     const es_message = {
-      messages: helper.commit_to_message(message),
+      messages: helper.commitToMessage(message),
       topic: topics.elasticsearch,
       key,
     };
     return [ git_message, es_message ];
   }
 
-  async send_message(message) {
+  async sendMessage(message) {
     const { ctx, service } = this;
-    const payloads = this.wrap_message(message);
+    const payloads = this.wrapMessage(message);
     await service.kafka.send(payloads)
       .catch(err => {
         ctx.logger.error(err);
       });
   }
 
-  get_file_name(path) {
+  getFileName(path) {
     const { ctx } = this;
     path = path || ctx.params.path;
-    return ctx.model.Node.get_file_name(path);
+    return ctx.model.Node.getFileName(path);
   }
 
   validate_file_path(path) {
@@ -60,7 +60,7 @@ class NodeController extends Controller {
     const { ctx } = this;
     path = path || ctx.params.path;
     const node = await ctx.model.Node
-      .get_by_path(project_id, path, from_cache)
+      .getByPath(project_id, path, from_cache)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
@@ -104,11 +104,11 @@ class NodeController extends Controller {
     }
   }
 
-  async ensure_parent_exist(account_id, project_id, path) {
+  async ensureParentExist(account_id, project_id, path) {
     const { ctx } = this;
     path = path || ctx.params.path;
     await ctx.model.Node
-      .ensure_parent_exist(account_id, project_id, path)
+      .ensureParentExist(account_id, project_id, path)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
@@ -118,7 +118,7 @@ class NodeController extends Controller {
   async ensure_parents_exist(account_id, project_id, files) {
     const { ctx } = this;
     for (const file of files) {
-      await ctx.model.Node.ensure_parent_exist(
+      await ctx.model.Node.ensureParentExist(
         account_id, project_id, file.path
       );
     }

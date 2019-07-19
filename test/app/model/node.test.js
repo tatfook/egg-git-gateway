@@ -28,7 +28,7 @@ describe('test/app/model/node.test.js', () => {
   });
 
   it('should get an file from database', async () => {
-    const loaded_from_db = await NodeModel.get_by_path_from_db(file.project_id, file.path);
+    const loaded_from_db = await NodeModel.getByPathFromDB(file.project_id, file.path);
     assert(loaded_from_db.name = file.name);
     assert(loaded_from_db.path = file.path);
     assert(loaded_from_db.content = file.content);
@@ -38,15 +38,15 @@ describe('test/app/model/node.test.js', () => {
   });
 
   it('should get an file from cache', async () => {
-    const loaded_from_cache = await NodeModel.load_content_cache_by_path(file.project_id, file.path);
+    const loaded_from_cache = await NodeModel.loadContentCacheByPath(file.project_id, file.path);
     assert(loaded_from_cache.type = file.type);
     assert(loaded_from_cache.path = file.path);
     assert(loaded_from_cache.content = file.content);
   });
 
   it('should release the cache after deleted', async () => {
-    await NodeModel.delete_and_release_cache(file);
-    const cached_data = await NodeModel.load_content_cache_by_path(file.project_id, file.path);
+    await NodeModel.deleteAndReleaseCache(file);
+    const cached_data = await NodeModel.loadContentCacheByPath(file.project_id, file.path);
     assert(!cached_data);
   });
 });

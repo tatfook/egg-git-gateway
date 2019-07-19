@@ -2,7 +2,7 @@
 
 const Controller = require('./node');
 
-const create_rule = {
+const CREATE_RULE = {
   branch: { type: 'string', default: 'master', required: false },
   commit_message: { type: 'string', required: false },
   encoding: {
@@ -13,7 +13,7 @@ const create_rule = {
   },
 };
 
-const move_rule = {
+const MOVE_RULE = {
   new_path: 'string',
   branch: { type: 'string', default: 'master', required: false },
   content: { type: 'string', required: false },
@@ -39,13 +39,13 @@ class FolderController extends Controller {
   */
   async create() {
     const { ctx } = this;
-    ctx.validate(create_rule);
+    ctx.validate(CREATE_RULE);
     const path = ctx.params.path;
     const project = await this.get_writable_project();
     await this.ensure_node_not_exist(project._id, path);
-    await this.ensure_parent_exist(project.account_id, project._id, path);
+    await this.ensureParentExist(project.account_id, project._id, path);
     const folder = new ctx.model.Node({
-      name: this.get_file_name(path),
+      name: this.getFileName(path),
       type: 'tree',
       path,
       project_id: project._id,
@@ -72,7 +72,7 @@ class FolderController extends Controller {
     const project = await this.get_writable_project();
     const folder = await this.get_existing_node(project._id, path, false);
     const subfiles = await ctx.model.Node
-      .get_tree_by_path_from_db(
+      .getTreeByPathFromDB(
         project._id,
         ctx.params.path,
         true,
@@ -88,12 +88,12 @@ class FolderController extends Controller {
     };
 
     const message = await ctx.model.Message
-      .delete_file(subfiles, project._id, message_options);
+      .deleteFile(subfiles, project._id, message_options);
 
     await ctx.model.Node
-      .delete_subfiles_and_release_cache(project._id, folder.path, subfiles);
+      .deleteSubfilesAndReleaseCache(project._id, folder.path, subfiles);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.deleted();
   }
 
@@ -110,21 +110,21 @@ class FolderController extends Controller {
   */
   async move() {
     const { ctx, service } = this;
-    ctx.validate(move_rule);
+    ctx.validate(MOVE_RULE);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
     const project = await this.get_writable_project();
     const folder = await this.get_existing_node(project._id, previous_path, false);
     await this.ensure_node_not_exist(project._id, new_path);
-    await this.ensure_parent_exist(project.account_id, project._id, new_path);
+    await this.ensureParentExist(project.account_id, project._id, new_path);
 
     folder.path = new_path;
     folder.previous_path = previous_path;
     folder.previous_name = folder.name;
-    folder.name = this.get_file_name();
+    folder.name = this.getFileName();
 
     let subfiles = await ctx.model.Node
-      .get_subfiles_by_path(project._id, previous_path, null, false);
+      .getSubfilesByPath(project._id, previous_path, null, false);
 
     subfiles = Promise.all(subfiles.map(file => {
       return service.node.getFileWithCommits(file);
@@ -145,9 +145,9 @@ class FolderController extends Controller {
 
     const message_options = this.get_message_options(project);
     const message = await ctx.model.Message
-      .move_file(subfiles, project._id, message_options);
+      .moveFile(subfiles, project._id, message_options);
 
-    await this.send_message(message);
+    await this.sendMessage(message);
     this.moved();
   }
 }

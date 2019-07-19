@@ -5,7 +5,6 @@ const MessageFormatter = require('../lib/message_formatter');
 module.exports = app => {
   const { mongoose } = app;
   const Schema = mongoose.Schema;
-  const logger = app.logger;
 
   const ActionSchema = new Schema({
     _id: String,
@@ -29,40 +28,24 @@ module.exports = app => {
 
   const statics = MessageSchema.statics;
 
-  statics.create_file = function(files, project_id, options) {
-    const message = MessageFormatter.create_file(files, project_id, options);
-    return this.create(message)
-      .catch(err => {
-        logger.error(`failed to create message ${message}`);
-        throw err;
-      });
+  statics.createFile = function(files, project_id, options) {
+    const message = MessageFormatter.createFile(files, project_id, options);
+    return this.create(message);
   };
 
-  statics.update_file = function(files, project_id, options) {
-    const message = MessageFormatter.update_file(files, project_id, options);
-    return this.create(message)
-      .catch(err => {
-        logger.error(`failed to create message ${message}`);
-        throw err;
-      });
+  statics.updateFile = function(files, project_id, options) {
+    const message = MessageFormatter.updateFile(files, project_id, options);
+    return this.create(message);
   };
 
-  statics.delete_file = function(files, project_id, options) {
-    const message = MessageFormatter.delete_file(files, project_id, options);
-    return this.create(message)
-      .catch(err => {
-        logger.error(`failed to create message ${message}`);
-        throw err;
-      });
+  statics.deleteFile = function(files, project_id, options) {
+    const message = MessageFormatter.deleteFile(files, project_id, options);
+    return this.create(message);
   };
 
-  statics.move_file = function(files, project_id, options) {
-    const message = MessageFormatter.move_file(files, project_id, options);
-    return this.create(message)
-      .catch(err => {
-        logger.error(`failed to create message ${message}`);
-        throw err;
-      });
+  statics.moveFile = function(files, project_id, options) {
+    const message = MessageFormatter.moveFile(files, project_id, options);
+    return this.create(message);
   };
 
   return mongoose.model('Message', MessageSchema);

@@ -24,7 +24,7 @@ class TreeController extends Controller {
     const recursive = ctx.params.recursive;
     const project = await this.get_existing_project(ctx.params.project_path);
     const tree = await ctx.model.Node
-      .get_tree_by_path(
+      .getTreeByPath(
         project._id,
         ctx.params.path,
         from_cache,
@@ -38,7 +38,7 @@ class TreeController extends Controller {
     const { ctx } = this;
     const project = await this.get_existing_project(ctx.params.project_path);
     const tree = await ctx.model.Node
-      .get_tree_by_path(
+      .getTreeByPath(
         project._id,
         null,
         false,

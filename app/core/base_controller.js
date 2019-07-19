@@ -24,7 +24,7 @@ class Base_controllerController extends Controller {
     const { ctx } = this;
     project_path = project_path || ctx.params.project_path;
     const project = await ctx.model.Project
-      .get_by_path(project_path, from_cache)
+      .getByPath(project_path, from_cache)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
