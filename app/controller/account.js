@@ -2,13 +2,10 @@
 
 const Controller = require('../core/base_controller');
 
-const create_rule = {
+const CREATE_RULE = {
   id: 'int',
   username: { type: 'string', format: /^[a-zA-Z]/ },
-  password: {
-    type: 'password',
-    min: 6,
-  },
+  password: { type: 'password', min: 6 },
 };
 
 class AccountController extends Controller {
@@ -27,15 +24,10 @@ class AccountController extends Controller {
     const { ctx, service } = this;
     ctx.verify();
     const kw_username = ctx.state.user.username;
-    const account = await this.get_existing_account({ kw_username });
-    if (!account.token) {
-      account.token = await service.gitlab.get_token(account._id);
-      await account.save().catch(err => {
-        const errMsg = 'Failed to get token';
-        ctx.logger.error(err);
-        ctx.throw(err.response.status, errMsg);
-      });
-    }
+
+    // 查询带gitlab token的account信息
+    const account = await service.account
+      .getAccountWithToken({ kw_username });
     ctx.body = {
       git_id: account._id,
       git_username: account.name,
@@ -55,32 +47,18 @@ class AccountController extends Controller {
   * @apiParam {String{ > 6 }} password Password of the gitlab account
   */
   async create() {
-    const { ctx, service, config } = this;
+    // 验证管理员权限、校验参数
+    const { ctx, service } = this;
     ctx.ensureAdmin();
-    ctx.validate(create_rule);
+    ctx.validate(CREATE_RULE);
+
+    // 检查账户是否已存在
     const kw_username = ctx.params.username;
-    await this.ensure_account_not_exist({ kw_username });
-    const account_prifix = config.gitlab.account_prifix;
-    const email_postfix = config.gitlab.email_postfix;
-    const account = await service.gitlab
-      .create_account({
-        username: `${account_prifix}${kw_username}`,
-        name: kw_username,
-        password: `kw${ctx.params.password}`,
-        email: `${kw_username}${email_postfix}`,
-      }).catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(err.response.status);
-      });
-    await ctx.model.Account.create({
-      _id: account._id,
-      kw_id: ctx.params.id,
-      name: account.username,
-      kw_username,
-    }).catch(err => {
-      ctx.logger.error(err);
-      throw err;
-    });
+    await service.account.ensureAccountNotExist({ kw_username });
+
+    // 注册gitlab账户，存入数据库
+    const gitAccount = await service.account.signUpGitlab();
+    await service.account.create(gitAccount);
     this.created();
   }
 
@@ -96,42 +74,9 @@ class AccountController extends Controller {
   async remove() {
     const { ctx, service } = this;
     ctx.ensureAdmin();
-    const account = await this.get_existing_account({
-      kw_username: ctx.params.kw_username,
-    });
-
-    await ctx.model.Node
-      .delete_account(account._id)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
-    await ctx.model.Project
-      .delete_account(account._id)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-
-    await service.gitlab
-      .delete_account(account._id)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(err.response.status);
-      });
-    await ctx.model.Account
-      .remove_by_query({ _id: account._id })
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
+    const { kw_username } = ctx.params;
+    await service.account.deleteByQuery({ kw_username });
     this.deleted();
-  }
-
-  async ensure_account_not_exist(query) {
-    const account = await this.get_account(query);
-    this.throw_if_exists(account, 'Account already exists');
   }
 }
 

@@ -10,60 +10,52 @@ let promisified_send;
 let initialized = false;
 
 class KafkaService extends Service {
-  constructor(ctx) {
-    super(ctx);
-    this.init_client();
-    this.init_producer();
-  }
-
   async send(payloads) {
     if (!initialized) {
-      await this.refresh_metadata();
+      await this.refreshMetadata();
       initialized = true;
     }
     if (!promisified_send) {
-      promisified_send = promisify(Producer.send.bind(Producer));
+      const { producer } = this;
+      promisified_send = promisify(producer.send.bind(producer));
     }
-    if (!(payloads instanceof Array)) { payloads = [ payloads ]; }
+    if (!(payloads instanceof Array)) payloads = [ payloads ];
     return promisified_send(payloads).then(result => {
       this.app.logger.info(`Successfully sent messages to ${inspect(result)}`);
       return result;
     });
   }
 
-  init_client() {
+  get client() {
     if (!Client) {
       Client = new KafkaClient(this.config.kafka.client);
     }
-
-    this.client = Client;
+    return Client;
   }
 
-  init_producer() {
+  get producer() {
     if (!Producer) {
       const options = this.config.kafka.producer;
-      Producer = new HighLevelProducer(Client, options);
-      this.on_error();
-      this.on_ready();
+      Producer = new HighLevelProducer(this.client, options);
+      this.onError();
+      this.onReady();
     }
-    this.producer = Producer;
+    return Producer;
   }
 
-  async refresh_metadata() {
+  async refreshMetadata() {
     const topics = Object.values(this.config.kafka.topics);
-    await promisify(Client.refreshMetadata.bind(Client))(topics)
-      .catch(err => {
-        this.app.logger.error(err);
-      });
+    const { client } = this;
+    await promisify(client.refreshMetadata.bind(client))(topics);
   }
 
-  on_ready() {
+  onReady() {
     Producer.on('ready', () => {
       this.app.logger.info('Successfully connect to kafka');
     });
   }
 
-  on_error() {
+  onError() {
     Producer.on('error', err => {
       this.app.logger.error('Fail to connect to kafka');
       this.app.logger.error(err);

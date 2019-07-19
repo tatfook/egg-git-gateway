@@ -3,6 +3,8 @@
 const Service = require('egg').Service;
 const Axios = require('axios');
 
+const DEFAULT_TIME_OUT = 30 * 1000;
+
 let Client;
 
 class KeepworkService extends Service {
@@ -11,7 +13,7 @@ class KeepworkService extends Service {
       const KEEPWORK_CONFIG = this.config.keepwork;
       Client = Axios.create({
         baseURL: KEEPWORK_CONFIG.url,
-        timeout: 3 * 1000,
+        timeout: KEEPWORK_CONFIG.timeout || DEFAULT_TIME_OUT,
       });
     }
     return Client;
@@ -25,8 +27,8 @@ class KeepworkService extends Service {
         `/sites/${site_id}/privilege`,
         { headers: { Authorization: token } }
       );
-      if (res.data === refuse_code) { return false; }
-      if (res.data >= permission) { return true; }
+      if (res.data === refuse_code) return false;
+      if (res.data >= permission) return true;
       return false;
     } catch (err) {
       this.app.logger.error(err);

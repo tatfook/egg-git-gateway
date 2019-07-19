@@ -2,11 +2,19 @@
 
 const Service = require('egg').Service;
 const Axios = require('axios');
-const assert = require('assert');
 const _ = require('lodash/object');
 
+const HTTP_CONFLICT_STATUS = 409;
+const HTTP_NOT_FOUND_STATUS = 404;
+
+const DEFAULT_TIME_OUT = 30 * 1000;
+const DEFAULT_VISIBILITY = 'public';
+const DEFAULT_PER_PAGE = 100;
+
+const HTML_PREFIX = '<!DOCTYPE html>';
+
 let Client;
-let Raw_Client;
+let RawClient;
 
 const COMMIT_PROPERTIES_TO_PICK = [
   'id', 'short_id', 'author_name', 'authored_date',
@@ -29,32 +37,37 @@ const serializeCommits = commits => {
 };
 
 class GitlabService extends Service {
+  handleError(err) {
+    const { ctx } = this;
+    ctx.throw(err.response.status, err.response.data);
+  }
+
   get client() {
     if (!Client) {
       const GITLAB_CONFIG = this.config.gitlab;
       Client = Axios.create({
         baseURL: GITLAB_CONFIG.url,
         headers: { 'private-token': GITLAB_CONFIG.admin_token },
-        timeout: 30 * 1000,
+        timeout: GITLAB_CONFIG.timeout || DEFAULT_TIME_OUT,
       });
     }
     return Client;
   }
 
-  get raw_client() {
-    if (!Raw_Client) {
+  get rawClient() {
+    if (!RawClient) {
       const GITLAB_CONFIG = this.config.gitlab;
-      Raw_Client = Axios.create({
+      RawClient = Axios.create({
         baseURL: GITLAB_CONFIG.raw_url,
         headers: { 'private-token': GITLAB_CONFIG.admin_token },
-        timeout: 30 * 1000,
+        timeout: GITLAB_CONFIG.timeout || DEFAULT_TIME_OUT,
       });
     }
-    return Raw_Client;
+    return RawClient;
   }
 
   // account
-  serialize_new_account(user) {
+  serializeNewAccount(user) {
     return {
       username: user.username,
       name: user.name,
@@ -64,7 +77,7 @@ class GitlabService extends Service {
     };
   }
 
-  serialize_loaded_account(res_data) {
+  serializeLoadedAccount(res_data) {
     return {
       username: res_data.username,
       name: res_data.name,
@@ -72,96 +85,70 @@ class GitlabService extends Service {
     };
   }
 
-  async get_account(username) {
+  async getAccount(username) {
     const res = await this.client
       .get(`/users?username=${username}`)
-      .catch(err => {
-        this.app.logger.error(`failed to get git account ${username}`);
-        this.app.logger.error(err);
-        throw err;
-      });
-    if (res.data.length > 0) { return res.data[0]; }
+      .catch(err => this.handleError(err));
+    if (res.data.length > 0) return res.data[0];
   }
 
-  async create_account(user) {
-    assert(user.username);
-    assert(user.password);
+  async createAccount(user) {
     let registered_account;
-    const account = this.serialize_new_account(user);
-    await this.client
-      .post('/users', account)
-      .then(res => {
-        registered_account = res.data;
-      })
+    const account = this.serializeNewAccount(user);
+    await this.client.post('/users', account)
+      .then(res => { registered_account = res.data; })
       .catch(async err => {
-        if (err.response.status === 409) {
-          registered_account = await this.get_account(user.username);
-          return;
+        if (err.response.status === HTTP_CONFLICT_STATUS) {
+          registered_account = await this.getAccount(user.username);
+        } else {
+          throw err;
         }
-        this.app.logger.error(`failed to create git account for ${user.username}`);
-        this.app.logger.error(err);
-        throw err;
       });
-    return this.serialize_loaded_account(registered_account);
+    return this.serializeLoadedAccount(registered_account);
   }
 
-  async delete_account(account_id) {
-    assert(account_id);
+  async deleteAccount(account_id) {
     await this.client
       .delete(`/users/${account_id}?hard_delete=true`, { hard_delete: true })
-      .catch(err => {
-        this.app.logger.error(`failed to delete git account ${account_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
+      .catch(err => this.handleError(err));
   }
 
-  async get_token(account_id) {
-    let token = await this.get_active_token(account_id);
-    if (!token) { token = await this.create_token(account_id); }
+  async getToken(account_id) {
+    let token = await this.getActiveToken(account_id);
+    if (!token) token = await this.createToken(account_id);
     return token;
   }
 
-  async get_active_token(account_id) {
-    assert(account_id);
+  async getActiveToken(account_id) {
     const res = await this.client
       .get(`/users/${account_id}/impersonation_tokens?state=active`)
-      .catch(err => {
-        this.app.logger.error(`failed to get token of git account ${account_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
+      .catch(err => this.handleError(err));
     for (const item of res.data) {
-      if (item.name === 'keepwork') { return item.token; }
+      if (item.name === 'keepwork') return item.token;
     }
   }
 
-  async create_token(account_id) {
-    assert(account_id);
+  async createToken(account_id) {
     const res = await this.client
       .post(`/users/${account_id}/impersonation_tokens`, {
         name: 'keepwork',
         expires_at: '2222-12-12',
         scopes: [ 'api', 'read_user' ],
-      }).catch(err => {
-        this.app.logger.error(`failed to create token of git account ${account_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
+      }).catch(err => this.handleError(err));
     return res.data.token;
   }
 
   // project
-  serialize_new_project(project) {
+  serializeNewProject(project) {
     return {
       name: project.name,
       user_id: project.account_id,
-      visibility: project.visibility || 'public',
+      visibility: project.visibility || DEFAULT_VISIBILITY,
       request_access_enabled: true,
     };
   }
 
-  serialize_loaded_project(res_data) {
+  serializeLoadedProject(res_data) {
     return {
       _id: res_data.id,
       visibility: res_data.visibility,
@@ -171,7 +158,7 @@ class GitlabService extends Service {
     };
   }
 
-  serialize_hook_setting(project) {
+  serializeHookSetting(project) {
     return {
       url: project.hook_url,
       push_events: project.push_events || true,
@@ -179,73 +166,47 @@ class GitlabService extends Service {
     };
   }
 
-  async set_project_hooks(project_id, hook_setting) {
-    assert(hook_setting.url);
+  async setProjectHooks(project_id, hook_setting) {
     hook_setting._id = project_id;
     await this.client
       .post(`/projects/${project_id}/hooks`, hook_setting)
-      .catch(err => {
-        this.app.logger.error(`failed to set hook of project ${project_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
+      .catch(err => this.handleError(err));
   }
 
-  async set_admin(project_id) {
+  async setAdmin(project_id) {
     const options = {
       user_id: 1,
       access_level: 40,
     };
     await this.client.post(`/projects/${project_id}/members`, options)
-      .catch(err => {
-        this.app.logger.error(err);
-        throw err;
-      });
+      .catch(err => this.handleError(err));
   }
 
-  async create_project(project) {
-    assert(project.name);
-    assert(project.account_id);
-
-    let serialized_project = this.serialize_new_project(project);
+  async createProject(project) {
+    let serialized_project = this.serializeNewProject(project);
     const res = await this.client
       .post(`/projects/user/${serialized_project.user_id}`, serialized_project)
-      .catch(err => {
-        this.app.logger.error(`failed to create git project ${serialized_project.name}`);
-        this.app.logger.error(err);
-        throw err;
-      });
-    serialized_project = this.serialize_loaded_project(res.data);
-    await this.set_admin(serialized_project._id);
+      .catch(err => this.handleError(err));
+    serialized_project = this.serializeLoadedProject(res.data);
+    await this.setAdmin(serialized_project._id);
     return serialized_project;
   }
 
-  async update_project_visibility(project_id, visibility) {
-    assert(project_id);
-    assert(visibility);
+  async updateProjectVisibility(project_id, visibility) {
     const res = await this.client
       .put(`projects/${project_id}`, { visibility })
-      .catch(err => {
-        this.app.logger.error(`failed to update visibility of project ${project_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
-    return this.serialize_loaded_project(res.data);
+      .catch(err => this.handleError(err));
+    return this.serializeLoadedProject(res.data);
   }
 
-  async delete_project(project_id) {
-    assert(project_id);
+  async deleteProject(project_id) {
     await this.client
       .delete(`/projects/${project_id}`)
-      .catch(err => {
-        this.app.logger.error(`failed to delete project ${project_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
+      .catch(err => this.handleError(err));
   }
 
   // file
-  serialized_loaded_file(res_data) {
+  serializedLoadedFile(res_data) {
     return {
       name: res_data.file_name,
       content: Buffer.from(res_data.content, res_data.encoding).toString(),
@@ -255,36 +216,26 @@ class GitlabService extends Service {
     };
   }
 
-  async load_file(project_id, file_path, ref = 'master') {
-    assert(project_id);
-    assert(file_path);
+  async loadFile(project_id, file_path, ref = 'master') {
     file_path = encodeURIComponent(file_path);
     const res = await this.client
       .get(`/projects/${project_id}/repository/files/${file_path}?ref=${ref}`)
-      .catch(err => {
-        this.app.logger.error(`failed to get file ${file_path} of project ${project_id}`);
-        this.app.logger.error(err);
-        throw err;
-      });
-    return this.serialized_loaded_file(res.data);
+      .catch(err => this.handleError(err));
+    return this.serializedLoadedFile(res.data);
   }
 
-  async load_raw_file(git_path, file_path) {
-    assert(git_path);
-    assert(file_path);
-    const res = await this.raw_client
+  async loadRawFile(git_path, file_path) {
+    const res = await this.rawClient
       .get(`/${git_path}/raw/master/${file_path}`)
-      .catch(err => {
-        this.app.logger.error(`failed to get file ${file_path} of project ${git_path}`);
-        this.app.logger.error(err);
-        throw err;
-      });
-    if (file_path.endsWith('.json')) { res.data = JSON.stringify(res.data); }
-    if (res.data.startsWith('<!DOCTYPE html>')) { throw { response: { status: 404 } }; }
+      .catch(err => this.handleError(err));
+    if (file_path.endsWith('.json')) res.data = JSON.stringify(res.data);
+    if (res.data.startsWith(HTML_PREFIX)) {
+      throw { response: { status: HTTP_NOT_FOUND_STATUS } };
+    }
     return { content: res.data };
   }
 
-  async loadCommits(project_id, path, page = 1, per_page = 100) {
+  async loadCommits(project_id, path, page = 1, per_page = DEFAULT_PER_PAGE) {
     const res = await this.client
       .get(`/projects/${project_id}/repository/commits`, {
         params: { path, page, per_page },
@@ -295,10 +246,10 @@ class GitlabService extends Service {
 
   async loadAllCommits(project_id, path) {
     let page = 1;
-    const per_page = 100;
+    const per_page = DEFAULT_PER_PAGE;
     let commits = await this.loadCommits(project_id, path, page, per_page);
     const all = commits;
-    while (commits.length >= 100) {
+    while (commits.length >= DEFAULT_PER_PAGE) {
       page++;
       commits = await this.loadCommits(project_id, path, page, per_page);
       all.push(...commits);
