@@ -8,6 +8,11 @@ before(async () => {
   loadMockTools(app);
 });
 
+beforeEach(() => {
+  const mockMethod = app.mock.service.kafka.send;
+  app.mockService('kafka', 'send', mockMethod);
+});
+
 after(async () => {
   await Promise.all([
     app.model.Account.deleteMany({}),

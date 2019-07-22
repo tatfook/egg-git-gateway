@@ -36,7 +36,7 @@ class ProjectService extends Service {
   async getExistsProject(path, fromCache) {
     const { service } = this;
     const project = await this.getByPath(path, fromCache);
-    service.commom.throwIfNotExist(project, ERR_MSGS.projectNotFound);
+    service.common.throwIfNotExist(project, ERR_MSGS.projectNotFound);
     return project;
   }
 
@@ -97,7 +97,7 @@ class ProjectService extends Service {
   }
 
   // 创建gitlab项目
-  async creatGitLabProject(account_id) {
+  async createGitlabProject(account_id) {
     const { ctx, service } = this;
     const { sitename, visibility } = ctx.params;
     const project = await service.gitlab

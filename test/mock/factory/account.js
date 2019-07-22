@@ -1,6 +1,6 @@
 'use strict';
 
-const prefix = 'gitlab_unittest_';
+const PREFIX = 'gitlab_unittest_';
 
 module.exports = app => {
   const { factory } = app;
@@ -10,7 +10,7 @@ module.exports = app => {
       kw_id: factory.chance('natural', { max: 10000 })(),
       kw_username: factory.chance('word', { length: 10 })(),
     };
-    attrs.name = `${prefix}${attrs.kw_username}`;
+    attrs.name = `${PREFIX}${attrs.kw_username}`;
     return attrs;
   });
 };

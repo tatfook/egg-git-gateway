@@ -1,56 +1,47 @@
 'use strict';
 
 const { app, assert } = require('egg-mock/bootstrap');
-const jwt = require('keepwork-jwt-simple');
-
-const project = {
-  sitename: 'test',
-  site_id: 456,
-  visibility: 'public',
-};
 
 let token;
+let factory;
 
 before(async () => {
-  const admin = {
-    username: 'unittest',
-    userId: 15,
-    roleId: 10,
-  };
-
-  const secret = app.config.jwt.secret;
-  token = jwt.encode(admin, secret, 'HS1');
-
-  const user = {
-    id: 123,
-    username: 'unittest',
-    password: '12345678',
-  };
-
-  await app.httpRequest()
-    .post('/accounts')
-    .set('Authorization', `Bearer ${token}`)
-    .send(user);
-});
-
-after(async () => {
-  await app.httpRequest()
-    .del('/accounts/unittest')
-    .set('Authorization', `Bearer ${token}`);
+  factory = app.factory;
+  token = app.mock.utils.token.getAdminToken();
 });
 
 describe('test/app/controller/project.test.js', () => {
-  it('should post /projects/user/:kw_username to create a project', () => {
-    return app.httpRequest()
-      .post('/projects/user/unittest')
+  it('should post /projects/user/:kw_username to create a project', async () => {
+    const mockMethod = app.mock.service.gitlab.createProject;
+    app.mockService('gitlab', 'createProject', mockMethod);
+
+    const account = await factory.create('Account');
+    const project = {
+      sitename: 'test',
+      site_id: 456,
+      visibility: 'public',
+    };
+
+    await app.httpRequest()
+      .post(`/projects/user/${account.kw_username}`)
       .set('Authorization', `Bearer ${token}`)
       .send(project)
       .expect(201);
+
+    const path = `${account.kw_username}/${project.sitename}`;
+    const projectGetFromDB = await app.model.Project.findOne({ path });
+    assert(projectGetFromDB);
+    assert(projectGetFromDB.path === path);
+    assert(projectGetFromDB.account_id === account._id);
   });
 
-  it('should put /projects/:path/visibility to update the visibility of a project', () => {
-    const path = encodeURIComponent('unittest/test');
-    return app.httpRequest()
+  it('should put /projects/:path/visibility to update the visibility of a project', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('gitlab', 'updateProjectVisibility', mockMethod);
+
+    const project = await factory.create('Project');
+    const path = encodeURIComponent(project.path);
+    await app.httpRequest()
       .put(`/projects/${path}/visibility`)
       .send({ visibility: 'private' })
       .set('Authorization', `Bearer ${token}`)
@@ -58,13 +49,24 @@ describe('test/app/controller/project.test.js', () => {
       .expect(res => {
         assert(res.body.visibility === 'private');
       });
+
+    const projectGetFromDB = await app.model.Project.findOne({ _id: project._id });
+    assert(project.path === projectGetFromDB.path);
+    assert(projectGetFromDB.visibility === 'private');
   });
 
-  it('should delete /projects/:path to delete an project', () => {
-    const path = encodeURIComponent('unittest/test');
-    return app.httpRequest()
+  it('should delete /projects/:path to delete an project', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('gitlab', 'deleteProject', mockMethod);
+
+    const project = await factory.create('Project');
+    const path = encodeURIComponent(project.path);
+    await app.httpRequest()
       .del(`/projects/${path}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
+
+    const projectGetFromDB = await app.model.Project.findOne({ path });
+    assert(projectGetFromDB === null);
   });
 });
