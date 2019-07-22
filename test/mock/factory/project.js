@@ -6,8 +6,8 @@ module.exports = app => {
     const account = await factory.create('Account');
     const sitename = factory.chance('word', { length: 10 })();
     const { kw_username, name } = account;
-    const path = `${name}/${sitename}`;
-    const git_path = `${kw_username}/${sitename}`;
+    const path = `${kw_username}/${sitename}`;
+    const git_path = `${name}/${sitename}`;
 
     const attrs = {
       _id: factory.chance('natural', { max: 10000 })(),

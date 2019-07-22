@@ -35,6 +35,21 @@ describe('test/app/controller/project.test.js', () => {
     assert(projectGetFromDB.account_id === account._id);
   });
 
+  it('should fail to post /projects/user/:kw_username', async () => {
+    const mockMethod = app.mock.service.gitlab.createProject;
+    app.mockService('gitlab', 'createProject', mockMethod);
+
+    const project = await factory.create('Project');
+    const account = await app.model.Account.findOne({ _id: project.account_id });
+    assert(account);
+
+    return app.httpRequest()
+      .post(`/projects/user/${account.kw_username}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(project)
+      .expect(409);
+  });
+
   it('should put /projects/:path/visibility to update the visibility of a project', async () => {
     const mockMethod = app.mock.service.common.success;
     app.mockService('gitlab', 'updateProjectVisibility', mockMethod);
