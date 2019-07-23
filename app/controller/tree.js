@@ -19,30 +19,27 @@ class TreeController extends Controller {
   * @apiParam {Boolean} [refresh_cache=false]  Whether refresh the cache of this tree
   */
   async show() {
-    const { ctx } = this;
-    const from_cache = !ctx.params.refresh_cache;
-    const recursive = ctx.params.recursive;
-    const project = await this.get_existing_project(ctx.params.project_path);
+    const { ctx, service } = this;
+    const { refresh_cache, recursive, path, project_path } = ctx.params;
+    const from_cache = !refresh_cache;
+    const project = await service.project.getExistsProject(project_path);
     const tree = await ctx.model.Node
       .getTreeByPath(
-        project._id,
-        ctx.params.path,
-        from_cache,
-        recursive,
+        project._id, path,
+        from_cache, recursive,
         paginate(ctx.params)
       );
     ctx.body = tree;
   }
 
   async root() {
-    const { ctx } = this;
-    const project = await this.get_existing_project(ctx.params.project_path);
+    const { ctx, service } = this;
+    const { project_path } = ctx.params;
+    const project = await service.project.getExistsProject(project_path);
     const tree = await ctx.model.Node
       .getTreeByPath(
-        project._id,
-        null,
-        false,
-        true,
+        project._id, null,
+        false, true,
         paginate(ctx.params)
       );
     ctx.body = tree;

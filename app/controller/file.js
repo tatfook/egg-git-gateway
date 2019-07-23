@@ -3,10 +3,6 @@
 const Controller = require('./node');
 const _ = require('lodash/object');
 
-const DEFAULT_BRANCH = 'master';
-const PENDING_TIP = 'pending';
-const ERROR_COMMIT_PENDING = 'Commit is pending';
-const HTTP_NOT_FOUND_STATUS = 404;
 const LATEST_FIELDS_TO_SHOW = [
   'version', 'source_version', 'author_name', 'createdAt',
 ];
@@ -81,30 +77,22 @@ class FileController extends Controller {
   */
   async show() {
     const { ctx, service } = this;
-    const { path, refresh_cache, ref = DEFAULT_BRANCH, commit } = ctx.params;
-
+    const { commit } = ctx.params;
     let project;
-    if (commit) {
-      project = await this.get_writable_project();
-    } else {
-      project = await this.get_readable_project();
-    }
-
-    const from_cache = !refresh_cache;
     let file;
-    if (ref !== DEFAULT_BRANCH) {
-      if (ref === PENDING_TIP) ctx.throw(HTTP_NOT_FOUND_STATUS, ERROR_COMMIT_PENDING);
-      file = await service.gitlab.load_file(project._id, path, ref)
-        .catch(err => {
-          if (err.response.status === HTTP_NOT_FOUND_STATUS) {
-            ctx.throw(err.response.status, err.response.data.message);
-          }
-        });
+
+    // 只有可编辑用户可获取commit信息
+    if (commit) {
+      project = await service.project.getWritableProject();
     } else {
-      file = await this.get_node(project._id, path, from_cache);
-      file = file || await this.load_from_gitlab(project);
+      project = await service.project.getReadableProject();
     }
 
+    // 如非master分支，则从gitlab获取
+    // 如为master分支，先从本服务获取，如不存在则查询gitlab
+    file = await service.node.getFromDBOrGitlab(project);
+
+    // 如需要获取commit信息而数据库中没有，则从gitlab获取commit信息
     if (commit && !file.latest_commit) {
       file = await service.node.getFileWithCommits(file);
     }
@@ -113,7 +101,6 @@ class FileController extends Controller {
       _id: file._id,
       content: file.content || '',
     };
-
     if (commit) {
       ctx.body.commit = _.pick(file.latest_commit, LATEST_FIELDS_TO_SHOW);
     }
@@ -131,63 +118,55 @@ class FileController extends Controller {
   * @apiParam {String} [content] Content of the file
   */
   async create() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     ctx.validate(CREATE_RULE);
-    const { path } = ctx.params;
-    const project = await this.get_writable_project();
-    await this.ensure_node_not_exist(project._id, path);
+    const { path, content } = ctx.params;
+    const project = await service.project.getWritableProject();
+    await service.node.ensureNodeNotExist(project._id, path);
     const nodes_to_create = await ctx.model.Node
       .getParentsNotExist(project.account_id, project._id, path);
+
     let file = {
-      name: this.getFileName(path),
-      content: ctx.params.content,
-      path,
+      name: service.node.getFileName(path),
+      content, path,
       project_id: project._id,
       account_id: project.account_id,
     };
-
     nodes_to_create.push(file);
-    const author_name = ctx.state.user.username;
-    const commitInfo = { author_name, new: true };
-    const files = await ctx.model.Node
-      .createAndCommit(commitInfo, ...nodes_to_create);
+    const files = await service.node.createAndCommit(true, ...nodes_to_create);
     file = files[files.length - 1];
 
-    const message_options = this.get_message_options(project);
+    // 发送消息
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .createFile(file, project._id, message_options);
-
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.created();
   }
 
-  async create_many() {
-    const { ctx } = this;
+  async createMany() {
+    const { ctx, service } = this;
     ctx.validate(CREATE_MANY_RULE);
-    const project = await this.get_writable_project();
+    const project = await service.project.getWritableProject();
     let { files } = ctx.params;
-    this.ensure_unique(files);
-    await this.ensure_nodes_not_exist(project._id, files);
+    service.node.ensureUnique(files);
+    await service.node.ensureNodesNotExist(project._id, files);
     const ancestors_to_create = await ctx.model.Node
       .getParentsNotExist(project.account_id, project._id, files);
     for (const file of files) {
-      file.name = this.getFileName(file.path);
+      file.name = service.node.getFileName(file.path);
       file.project_id = project._id;
       file.account_id = project.account_id;
     }
 
     const nodes_to_create = files.concat(ancestors_to_create);
+    files = await service.node.createAndCommit(true, ...nodes_to_create);
 
-    const author_name = ctx.state.user.username;
-    const commitInfo = { author_name, new: true };
-    files = await ctx.model.Node
-      .createAndCommit(commitInfo, ...nodes_to_create);
-
-    const message_options = this.get_message_options(project);
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .createFile(files, project._id, message_options);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.created();
   }
 
@@ -206,19 +185,19 @@ class FileController extends Controller {
     const { ctx, service } = this;
     ctx.validate(UPDATE_RULE);
     const { path, source_version } = ctx.params;
-    const project = await this.get_readable_project();
-    let file = await this.get_existing_node(project._id, path, false);
+    const project = await service.project.getReadableProject();
+    let file = await service.node.getExistsNode(project._id, path, false);
     file = await service.node.getFileWithCommits(file);
 
     file.set({ content: ctx.params.content });
     file.createCommit({ author_name: ctx.state.user.username, source_version });
     await file.save();
 
-    const message_options = this.get_message_options(project);
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .updateFile(file, project._id, message_options);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.updated({ commit: _.pick(file.latest_commit, LATEST_FIELDS_TO_SHOW) });
   }
 
@@ -233,19 +212,18 @@ class FileController extends Controller {
   * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async remove() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     const { path } = ctx.params;
-    const project = await this.get_writable_project();
-    const file = await this.get_existing_node(project._id, path, false);
+    const project = await service.project.getWritableProject();
+    const file = await service.node.getExistsNode(project._id, path, false);
 
-    await ctx.model.Node
-      .deleteAndReleaseCache(file);
+    await ctx.model.Node.deleteAndReleaseCache(file);
 
-    const message_options = this.get_message_options(project);
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .deleteFile(file, project._id, message_options);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.deleted();
   }
 
@@ -266,48 +244,29 @@ class FileController extends Controller {
     ctx.validate(MOVE_RULE);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
-    const project = await this.get_writable_project();
-    let file = await this.get_existing_node(project._id, previous_path, false);
+    const project = await service.project.getWritableProject();
+    let file = await service.node.getExistsNode(project._id, previous_path, false);
     file = await service.node.getFileWithCommits(file);
-    await this.ensure_node_not_exist(project._id, new_path);
-    await this.ensureParentExist(project.account_id, project._id, new_path);
+    await service.node.ensureNodeNotExist(project._id, new_path);
+    await service.node.ensureParentExist(project.account_id, project._id, new_path);
     file = await service.node.getFileWithCommits(file);
 
     const { content } = ctx.params;
-    if (content) { file.content = content; }
+    if (content) file.content = content;
     file.previous_path = previous_path;
     file.path = new_path;
     file.previous_name = file.name;
-    file.name = this.getFileName();
+    file.name = service.node.getFileName();
 
     file.createCommit({ author_name: ctx.state.user.username });
     await ctx.model.Node.move(file);
 
-    const message_options = this.get_message_options(project);
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .moveFile(file, project._id, message_options);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.moved();
-  }
-
-  async load_from_gitlab(project) {
-    const { ctx, service } = this;
-    if (!project) { project = await this.get_existing_project(); }
-    const file = await service.gitlab
-      .load_raw_file(project.git_path, ctx.params.path)
-      .catch(err => {
-        ctx.logger.error(err);
-        if (err.response.status === HTTP_NOT_FOUND_STATUS) {
-          this.throw_if_node_not_exist();
-        }
-      });
-    file.path = ctx.params.path;
-    file.name = this.getFileName(file.path);
-    file.project_id = project._id;
-    file.account_id = project.account_id;
-    await ctx.model.Node.create(file);
-    return file;
   }
 }
 

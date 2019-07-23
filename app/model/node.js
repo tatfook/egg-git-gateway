@@ -56,7 +56,7 @@ module.exports = app => {
     if (this.type === FOLDER_TYPE) return;
     this.commits = this.commits || [];
     const lastCommit = this.latest_commit || {};
-    if (_.isEmpty(lastCommit) && !info.new) return;
+    if (_.isEmpty(lastCommit) && !info.isNewFile) return;
     let baseInfo = {
       version: (lastCommit.version || 0) + 1,
       commit_id: PENDING_TIP,

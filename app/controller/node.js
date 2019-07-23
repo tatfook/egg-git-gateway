@@ -49,13 +49,6 @@ class NodeController extends Controller {
     return ctx.model.Node.getFileName(path);
   }
 
-  validate_file_path(path) {
-    const { ctx } = this;
-    path = path || ctx.params.path;
-    const pattern = /\.[^\.]+$/;
-    if (!pattern.test(path)) { ctx.throw(400, 'Path of the file must end with .xxx'); }
-  }
-
   async get_node(project_id, path, from_cache) {
     const { ctx } = this;
     path = path || ctx.params.path;
@@ -113,15 +106,6 @@ class NodeController extends Controller {
         ctx.logger.error(err);
         ctx.throw(500);
       });
-  }
-
-  async ensure_parents_exist(account_id, project_id, files) {
-    const { ctx } = this;
-    for (const file of files) {
-      await ctx.model.Node.ensureParentExist(
-        account_id, project_id, file.path
-      );
-    }
   }
 
   get_message_options(project) {

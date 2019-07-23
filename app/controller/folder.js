@@ -38,12 +38,12 @@ class FolderController extends Controller {
   * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async create() {
-    const { ctx } = this;
+    const { ctx, service } = this;
     ctx.validate(CREATE_RULE);
     const path = ctx.params.path;
-    const project = await this.get_writable_project();
-    await this.ensure_node_not_exist(project._id, path);
-    await this.ensureParentExist(project.account_id, project._id, path);
+    const project = await service.project.getWritableProject();
+    await service.node.ensureNodeNotExist(project._id, path);
+    await service.node.ensureParentExist(project.account_id, project._id, path);
     const folder = new ctx.model.Node({
       name: this.getFileName(path),
       type: 'tree',
@@ -67,10 +67,10 @@ class FolderController extends Controller {
   * @apiParam {String} encoded_path Urlencoded tree path such as 'folder%2Ffolder'
   */
   async remove() {
-    const { ctx } = this;
-    const path = ctx.params.path;
-    const project = await this.get_writable_project();
-    const folder = await this.get_existing_node(project._id, path, false);
+    const { ctx, service } = this;
+    const { path } = ctx.params;
+    const project = await service.project.getWritableProject();
+    const folder = await service.node.getExistsNode(project._id, path, false);
     const subfiles = await ctx.model.Node
       .getTreeByPathFromDB(
         project._id,
@@ -113,10 +113,10 @@ class FolderController extends Controller {
     ctx.validate(MOVE_RULE);
     const previous_path = ctx.params.path;
     const new_path = ctx.params.path = ctx.params.new_path;
-    const project = await this.get_writable_project();
-    const folder = await this.get_existing_node(project._id, previous_path, false);
-    await this.ensure_node_not_exist(project._id, new_path);
-    await this.ensureParentExist(project.account_id, project._id, new_path);
+    const project = await service.project.getWritableProject();
+    const folder = await service.node.getExistsNode(project._id, previous_path, false);
+    await service.node.ensureNodeNotExist(project._id, new_path);
+    await service.node.ensureParentExist(project.account_id, project._id, new_path);
 
     folder.path = new_path;
     folder.previous_path = previous_path;
