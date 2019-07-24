@@ -1,6 +1,6 @@
 'use strict';
 
-const loadMockAxios = require('./mock-axios');
+const loadMockAxios = require('./axios');
 const loadFactory = require('./factory');
 const loadMockUtils = require('./utils');
 const loadMockService = require('./service');

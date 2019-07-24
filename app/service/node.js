@@ -48,7 +48,7 @@ class NodeService extends Service {
     const { ctx } = this;
     const exist_paths = {};
     for (const file of files) {
-      if (exist_paths[file.path]) { ctx.throw(409, REPLICA_ERROR_MSG); }
+      if (exist_paths[file.path]) ctx.throw(409, REPLICA_ERROR_MSG);
       exist_paths[file.path] = true;
     }
   }
