@@ -1,10 +1,10 @@
 'use strict';
 
-const { inspect } = require('util');
-
 class MockKafkaServie {
   static async send(payloads) {
-    console.info(`sent ${inspect(payloads)}`);
+    for (const message of payloads) {
+      console.info(`sent message to ${message.topic}: ${message.key}`);
+    }
     return true;
   }
 }

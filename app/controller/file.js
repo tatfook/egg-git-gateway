@@ -1,6 +1,6 @@
 'use strict';
 
-const Controller = require('./node');
+const Controller = require('../core/base_controller');
 const _ = require('lodash/object');
 
 const LATEST_FIELDS_TO_SHOW = [
@@ -184,12 +184,12 @@ class FileController extends Controller {
   async update() {
     const { ctx, service } = this;
     ctx.validate(UPDATE_RULE);
-    const { path, source_version } = ctx.params;
+    const { path, source_version, content } = ctx.params;
     const project = await service.project.getReadableProject();
     let file = await service.node.getExistsNode(project._id, path, false);
     file = await service.node.getFileWithCommits(file);
 
-    file.set({ content: ctx.params.content });
+    file.set({ content });
     file.createCommit({ author_name: ctx.state.user.username, source_version });
     await file.save();
 
