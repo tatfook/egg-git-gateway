@@ -6,6 +6,8 @@ const loadMockTools = require('./setup/loader')
 before(async () => {
   await app.ready();
   loadMockTools(app);
+  const mockMethod = app.mock.service.kafka.send;
+  app.mockService('kafka', 'send', mockMethod);
 });
 
 beforeEach(() => {

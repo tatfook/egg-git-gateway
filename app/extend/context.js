@@ -50,7 +50,7 @@ module.exports = {
     await this.service.keepwork
       .getUserProfile(token)
       .catch(err => {
-        this.ctx.logger.error(err);
+        this.logger.error(err);
         const errMsg = INVALID_TOKEN_ERROR_MSG;
         this.throw(HTTP_AUTH_REQUIRED_STATUS, errMsg);
       });

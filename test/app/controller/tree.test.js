@@ -1,76 +1,49 @@
 'use strict';
 
 const { app, assert } = require('egg-mock/bootstrap');
-const jwt = require('keepwork-jwt-simple');
 
+let factory;
+let project;
+let account;
 let token;
-const project_path = encodeURIComponent('test_tree/test_tree');
+let encodedProjectPath;
 
 before(async () => {
-  const admin = {
-    username: 'unittest',
-    userId: 15,
-    roleId: 10,
-  };
-  const secret = app.config.jwt.secret;
-  token = jwt.encode(admin, secret, 'HS1');
+  factory = app.factory;
+  project = await factory.create('Project');
+  account = await app.model.Account.findOne({ _id: project.account_id });
+  encodedProjectPath = encodeURIComponent(project.path);
+  token = app.mock.utils.token.get(account);
 
-  const user = {
-    id: 789,
-    username: 'test_tree',
-    password: '12345678',
-  };
-
-  const project = {
-    sitename: 'test_tree',
-    site_id: 123,
-    visibility: 'public',
-  };
-
-  await app.httpRequest()
-    .post('/accounts')
-    .send(user)
-    .set('Authorization', `Bearer ${token}`);
-
-  await app.httpRequest()
-    .post('/projects/user/test_tree')
-    .set('Authorization', `Bearer ${token}`)
-    .send(project);
+  app.mock.axios.keepwork.set(200, 64);
 
   const file = { content: 'hello' };
-  const file_path = 'test_tree/test_tree/test.md';
+  const filePath = 'test_tree/test_tree/test.md';
   await app.httpRequest()
-    .post(`/projects/${project_path}/files/${encodeURIComponent(file_path)}`, file)
+    .post(`/projects/${encodedProjectPath}/files/${encodeURIComponent(filePath)}`, file)
     .set('Authorization', `Bearer ${token}`)
     .send(project);
 
-  const folder_path = 'test_tree/test_tree/new_folder';
+  const folderPath = 'test_tree/test_tree/new_folder';
   await app.httpRequest()
-    .post(`/projects/${project_path}/folders/${encodeURIComponent(folder_path)}`)
+    .post(`/projects/${encodedProjectPath}/folders/${encodeURIComponent(folderPath)}`)
     .set('Authorization', `Bearer ${token}`)
     .send(project);
+});
+
+beforeEach(() => {
+  app.mock.axios.keepwork.set(200, 64);
 });
 
 describe('test/app/controller/tree.test.js', () => {
-  it('should get a tree', () => {
-    const tree_path = encodeURIComponent('test_tree/test_tree');
-    return app.httpRequest()
-      .get(`/projects/${project_path}/tree/${tree_path}`)
-      .expect(200)
-      .expect(response => {
-        const tree = response.body;
-        assert(tree instanceof Array);
-        assert(tree.length === 2);
-      });
+  it('should get a tree', async () => {
+    const treePath = encodeURIComponent('test_tree/test_tree');
+    const res = await app.httpRequest()
+      .get(`/projects/${encodedProjectPath}/tree/${treePath}`)
+      .expect(200);
+
+    const tree = res.body;
+    assert(tree instanceof Array);
+    assert(tree.length === 2);
   });
-});
-
-after(async () => {
-  await app.httpRequest()
-    .del(`/projects/${encodeURIComponent('test_tree/test_tree')}`)
-    .set('Authorization', `Bearer ${token}`);
-
-  await app.httpRequest()
-    .del('/accounts/test_tree')
-    .set('Authorization', `Bearer ${token}`);
 });
