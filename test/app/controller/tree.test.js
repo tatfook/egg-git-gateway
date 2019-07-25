@@ -15,7 +15,9 @@ before(async () => {
   encodedProjectPath = encodeURIComponent(project.path);
   token = app.mock.utils.token.get(account);
 
-  app.mock.axios.keepwork.set(200, 64);
+  const mockMethod = app.mock.service.common.success;
+  app.mockService('keepwork', 'ensurePermission', mockMethod);
+  app.mockService('keepwork', 'getUserProfile', mockMethod);
 
   const file = { content: 'hello' };
   const filePath = 'test_tree/test_tree/test.md';
@@ -31,12 +33,12 @@ before(async () => {
     .send(project);
 });
 
-beforeEach(() => {
-  app.mock.axios.keepwork.set(200, 64);
-});
-
 describe('test/app/controller/tree.test.js', () => {
   it('should get a tree', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const treePath = encodeURIComponent('test_tree/test_tree');
     const res = await app.httpRequest()
       .get(`/projects/${encodedProjectPath}/tree/${treePath}`)

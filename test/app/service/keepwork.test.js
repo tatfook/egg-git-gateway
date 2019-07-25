@@ -11,6 +11,20 @@ before(() => {
 
 describe('test/app/service/keepwork.test.js', () => {
   describe('ensurePermission', () => {
+    it('should return true', async () => {
+      app.mock.axios.keepwork.setOnce(200, 32);
+      const permitted = await KeepworkService.ensurePermission(
+        6, 5, 'r');
+      assert(permitted);
+    });
+
+    it('should return true', async () => {
+      app.mock.axios.keepwork.setOnce(200, 64);
+      const permitted = await KeepworkService.ensurePermission(
+        11, 4, 'rw');
+      assert(permitted);
+    });
+
     it('should return false', async () => {
       app.mock.axios.keepwork.setOnce(200, 0);
       const permitted = await KeepworkService.ensurePermission(
@@ -25,25 +39,11 @@ describe('test/app/service/keepwork.test.js', () => {
       assert(!permitted);
     });
 
-    it('should return true', async () => {
-      app.mock.axios.keepwork.setOnce(200, 32);
-      const permitted = await KeepworkService.ensurePermission(
-        6, 5, 'r');
-      assert(permitted);
-    });
-
     it('should return false', async () => {
       app.mock.axios.keepwork.setOnce(200, 32);
       const permitted = await KeepworkService.ensurePermission(
         6, 5, 'rw');
       assert(!permitted);
-    });
-
-    it('should return true', async () => {
-      app.mock.axios.keepwork.setOnce(200, 64);
-      const permitted = await KeepworkService.ensurePermission(
-        11, 4, 'rw');
-      assert(permitted);
     });
   });
 });

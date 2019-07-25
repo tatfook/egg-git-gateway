@@ -3,19 +3,6 @@
 const Controller = require('../core/base_controller');
 
 class NodeController extends Controller {
-  async clear_project() {
-    const { ctx } = this;
-    ctx.ensureAdmin();
-    const project = await this.get_project();
-    await ctx.model.Node
-      .deleteProject(project._id)
-      .catch(err => {
-        ctx.logger.error(err);
-        ctx.throw(500);
-      });
-    this.deleted();
-  }
-
   wrapMessage(message) {
     const { ctx } = this;
     const { helper } = ctx;

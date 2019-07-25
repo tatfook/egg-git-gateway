@@ -200,7 +200,7 @@ class GitlabService extends Service {
   }
 
   async deleteProject(project_id) {
-    await this.client
+    return await this.client
       .delete(`/projects/${project_id}`)
       .catch(err => this.handleError(err));
   }

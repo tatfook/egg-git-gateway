@@ -105,7 +105,7 @@ class ProjectController extends Controller {
     const { ctx, service } = this;
     ctx.ensureAdmin();
     const { path } = ctx.params;
-    const project = service.project.deleteByPath(path);
+    const project = await service.project.deleteByPath(path);
     if (project.site_id) {
       const method = DELETE_SITE_METHOD;
       await service.project.sendMessage(project, method);

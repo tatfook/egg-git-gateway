@@ -24,12 +24,12 @@ before(async () => {
   };
 });
 
-beforeEach(() => {
-  app.mock.axios.keepwork.set(200, 64);
-});
-
 describe('test/app/controller/folder.test.js', () => {
   it('should post /projects/:project_path/folders/:path to create a folder', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const path = 'test_folder/test_folder/new_folder1';
     const encodedFolderPath = encodeURIComponent(path);
 
@@ -44,6 +44,10 @@ describe('test/app/controller/folder.test.js', () => {
   });
 
   it('should delete /projects/:project_path/folders/:path to remove a folder', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const folder = await factory.create('Node', option, { isFolder: true });
     const { path } = folder;
     const encodedFolderPath = encodeURIComponent(path);
@@ -58,6 +62,10 @@ describe('test/app/controller/folder.test.js', () => {
   });
 
   it('should delete /projects/:project_path/folders/:path to remove a folder', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const folder = await factory.create('Node', option);
     const { path } = folder;
     const encodedFolderPath = encodeURIComponent(path);

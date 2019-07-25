@@ -22,12 +22,12 @@ before(async () => {
   };
 });
 
-beforeEach(() => {
-  app.mock.axios.keepwork.set(200, 64);
-});
-
 describe('test/app/controller/file.test.js', () => {
   it('should post /projects/:project_path/files/:path to create a file', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const fileName = faker.system.fileName();
     const path = `${project.path}/${fileName}`;
     const encodedFilePath = encodeURIComponent(path);
@@ -49,6 +49,10 @@ describe('test/app/controller/file.test.js', () => {
   });
 
   it('should get /projects/:project_path/files/:path to get a file', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const file = await factory.create('Node', option);
     const encodedFilePath = encodeURIComponent(file.path);
 
@@ -61,6 +65,10 @@ describe('test/app/controller/file.test.js', () => {
   });
 
   it('should put /projects/:project_path/files/:path to update a file', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const file = await factory.create('Node', option);
     const encodedFilePath = encodeURIComponent(file.path);
     const newContent = faker.lorem.sentence();
@@ -76,6 +84,10 @@ describe('test/app/controller/file.test.js', () => {
   });
 
   it('should put /projects/:project_path/files/:path/move to move a file', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const file = await factory.create('Node', option);
     const encodedFilePath = encodeURIComponent(file.path);
     const new_path = 'test_file/test_file/test_new.md';
@@ -91,6 +103,10 @@ describe('test/app/controller/file.test.js', () => {
   });
 
   it('should delete /projects/:project_path/files/:path to remove a file', async () => {
+    const mockMethod = app.mock.service.common.success;
+    app.mockService('keepwork', 'ensurePermission', mockMethod);
+    app.mockService('keepwork', 'getUserProfile', mockMethod);
+
     const file = await factory.create('Node', option);
     const encodedFilePath = encodeURIComponent(file.path);
 

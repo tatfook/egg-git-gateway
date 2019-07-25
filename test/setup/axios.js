@@ -12,8 +12,6 @@ const loadMockAxios = app => {
   const _mockAxios = Symbol('_mock_axios');
   app.loader.loadToApp(directory, _mockAxios);
   app.mock.axios = app[_mockAxios];
-
-  afterEach(mockAxios.restore);
 };
 
 module.exports = loadMockAxios;

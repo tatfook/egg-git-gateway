@@ -6,7 +6,7 @@ class Base_controllerController extends Controller {
   async get_account(query) {
     const { ctx } = this;
     const account = await ctx.model.Account
-      .get_by_query(query)
+      .getByQuery(query)
       .catch(err => {
         ctx.logger.error(err);
         ctx.throw(500);
