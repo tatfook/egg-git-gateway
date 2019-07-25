@@ -134,6 +134,7 @@ class NodeService extends Service {
   }
 
   // 获取带commits信息的文件
+  // 如没有commits，到gitlab获取
   async getFileWithCommits(file) {
     if (!file.latest_commit) {
       const result = await this.getCommits(file.project_id, file.path, 0, 10000);

@@ -118,6 +118,7 @@ class FileController extends Controller {
   * @apiParam {String} [content] Content of the file
   */
   async create() {
+    // 校验参数, 确保文件不存在，确保文件的祖先节点存在
     const { ctx, service } = this;
     ctx.validate(CREATE_RULE);
     const { path, content } = ctx.params;
@@ -126,6 +127,7 @@ class FileController extends Controller {
     const nodes_to_create = await ctx.model.Node
       .getParentsNotExist(project.account_id, project._id, path);
 
+    // 创建文件及其不存在的祖先节点
     let file = {
       name: service.node.getFileName(path),
       content, path,
@@ -145,6 +147,7 @@ class FileController extends Controller {
   }
 
   async createMany() {
+    // 校验参数, 确保文件不存在，确保文件的祖先节点存在
     const { ctx, service } = this;
     ctx.validate(CREATE_MANY_RULE);
     const project = await service.project.getWritableProject();
@@ -153,12 +156,12 @@ class FileController extends Controller {
     await service.node.ensureNodesNotExist(project._id, files);
     const ancestors_to_create = await ctx.model.Node
       .getParentsNotExist(project.account_id, project._id, files);
+
     for (const file of files) {
       file.name = service.node.getFileName(file.path);
       file.project_id = project._id;
       file.account_id = project.account_id;
     }
-
     const nodes_to_create = files.concat(ancestors_to_create);
     files = await service.node.createAndCommit(true, ...nodes_to_create);
 
@@ -182,13 +185,17 @@ class FileController extends Controller {
   * @apiParam {String} content Content of the file
   */
   async update() {
+    // 校验参数, 确保文件存在
     const { ctx, service } = this;
     ctx.validate(UPDATE_RULE);
     const { path, source_version, content } = ctx.params;
     const project = await service.project.getReadableProject();
     let file = await service.node.getExistsNode(project._id, path, false);
+
+    // 如文件没有commits数据，则到gitlab获取
     file = await service.node.getFileWithCommits(file);
 
+    // 修改文件数据， 创建临时commit
     file.set({ content });
     file.createCommit({ author_name: ctx.state.user.username, source_version });
     await file.save();
@@ -240,6 +247,8 @@ class FileController extends Controller {
   * @apiParam {String} [content] Content of the file
   */
   async move() {
+    // 校验参数，确认要移动的文件存在
+    // 确认新路径上的所有祖先节点存在，如不存在则创建
     const { ctx, service } = this;
     ctx.validate(MOVE_RULE);
     const previous_path = ctx.params.path;
