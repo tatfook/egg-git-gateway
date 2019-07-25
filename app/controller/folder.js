@@ -1,6 +1,6 @@
 'use strict';
 
-const Controller = require('./node');
+const Controller = require('../core/base_controller');
 
 const CREATE_RULE = {
   branch: { type: 'string', default: 'master', required: false },
@@ -45,7 +45,7 @@ class FolderController extends Controller {
     await service.node.ensureNodeNotExist(project._id, path);
     await service.node.ensureParentExist(project.account_id, project._id, path);
     const folder = new ctx.model.Node({
-      name: this.getFileName(path),
+      name: service.node.getFileName(path),
       type: 'tree',
       path,
       project_id: project._id,
@@ -93,7 +93,7 @@ class FolderController extends Controller {
     await ctx.model.Node
       .deleteSubfilesAndReleaseCache(project._id, folder.path, subfiles);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.deleted();
   }
 
@@ -121,7 +121,7 @@ class FolderController extends Controller {
     folder.path = new_path;
     folder.previous_path = previous_path;
     folder.previous_name = folder.name;
-    folder.name = this.getFileName();
+    folder.name = service.node.getFileName();
 
     let subfiles = await ctx.model.Node
       .getSubfilesByPath(project._id, previous_path, null, false);
@@ -147,7 +147,7 @@ class FolderController extends Controller {
     const message = await ctx.model.Message
       .moveFile(subfiles, project._id, message_options);
 
-    await this.sendMessage(message);
+    await service.node.sendMessage(message);
     this.moved();
   }
 }

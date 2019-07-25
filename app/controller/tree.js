@@ -1,6 +1,6 @@
 'use strict';
 
-const Controller = require('./node');
+const Controller = require('../core/base_controller');
 const { paginate } = require('../lib/helper');
 
 class TreeController extends Controller {
