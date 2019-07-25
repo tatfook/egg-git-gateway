@@ -63,7 +63,7 @@ class NodeService extends Service {
     const { ctx, service } = this;
     project = project || await this.getExistsNode();
     const file = await service.gitlab
-      .loadRawFile(project.git_path, ctx.params.path);
+      .loadFile(project.git_path, ctx.params.path);
     file.path = ctx.params.path;
     file.name = this.getFileName(file.path);
     file.project_id = project._id;
