@@ -126,7 +126,7 @@ class FolderController extends Controller {
     let subfiles = await ctx.model.Node
       .getSubfilesByPath(project._id, previous_path, null, false);
 
-    subfiles = Promise.all(subfiles.map(file => {
+    subfiles = await Promise.all(subfiles.map(file => {
       return service.node.getFileWithCommits(file);
     }));
 
@@ -143,7 +143,7 @@ class FolderController extends Controller {
     });
     await Promise.all(tasks);
 
-    const message_options = this.get_message_options(project);
+    const message_options = service.node.getMessageOptions(project);
     const message = await ctx.model.Message
       .moveFile(subfiles, project._id, message_options);
 
