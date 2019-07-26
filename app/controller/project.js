@@ -117,7 +117,7 @@ class ProjectController extends Controller {
     const { ctx, service } = this;
     const { path, file_path } = ctx.params;
     const { skip, limit } = ctx.helper.paginate(ctx.params);
-    const project = await service.project.getReadableProject(path, false);
+    const project = await service.project.getWritableProject(path, false);
     const commitsDetail = await service.node
       .getCommits(project._id, file_path, skip, limit);
     ctx.body = _.pick(commitsDetail, COMMIT_FIELD_TO_RESPONSE);
