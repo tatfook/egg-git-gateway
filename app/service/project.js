@@ -9,7 +9,7 @@ const ERR_MSGS = {
 
 const PRIVATE_VISIBILITY = 'private';
 const READ_PERMISSION = 'r';
-const READ_WRITE_PERMISSION = 'r';
+const READ_WRITE_PERMISSION = 'rw';
 
 class ProjectService extends Service {
   async getByPath(path, fromCache) {

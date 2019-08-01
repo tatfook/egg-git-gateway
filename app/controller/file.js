@@ -189,7 +189,7 @@ class FileController extends Controller {
     const { ctx, service } = this;
     ctx.validate(UPDATE_RULE);
     const { path, source_version, content } = ctx.params;
-    const project = await service.project.getReadableProject();
+    const project = await service.project.getWritableProject();
     let file = await service.node.getExistsNode(project._id, path, false);
 
     // 如文件没有commits数据，则到gitlab获取
