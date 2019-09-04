@@ -15,3 +15,4 @@ config.unittest.js
 config.prod.js
 doc/
 .vscode/
+newrelic_*
