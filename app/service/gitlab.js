@@ -188,7 +188,6 @@ class GitlabService extends Service {
       .post(`/projects/user/${serialized_project.user_id}`, serialized_project)
       .catch(err => this.handleError(err));
     serialized_project = this.serializeLoadedProject(res.data);
-    await this.setAdmin(serialized_project._id);
     return serialized_project;
   }
 
